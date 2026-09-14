@@ -1,0 +1,9 @@
+{
+  "id": "DEMO-C",
+  "slug": "demo-c-partial",
+  "title": "Partial record example",
+  "year": 2024,
+  "category": "test-board",
+  "description": "A minimal demonstration record. Media and technical information have not been provided.",
+  "demo": true
+}

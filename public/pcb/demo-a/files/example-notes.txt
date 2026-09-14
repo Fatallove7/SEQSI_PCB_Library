@@ -1,0 +1,5 @@
+DEMO CONTENT ONLY
+This file demonstrates downloadable documentation.
+No real PCB data, engineering specifications, or manufacturing instructions are supplied.
+The GLB is a cuboid in arbitrary display units. SVGs are labeled illustrative placeholders.
+Replace all demo records and files with verified group content.

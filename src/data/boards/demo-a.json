@@ -1,0 +1,23 @@
+{
+  "id": "DEMO-A",
+  "slug": "demo-a-complete",
+  "title": "Complete record example",
+  "year": 2026,
+  "category": "adapter-board",
+  "designer": ["Demo contributor A"],
+  "description": "A demonstration record with every media section, an interactive model, and a downloadable example file.",
+  "demo": true,
+  "tags": ["demo", "complete record"],
+  "thumbnail": "/pcb/demo-a/thumbnail.svg",
+  "schematic": { "images": ["/pcb/demo-a/schematic/page-1.svg"] },
+  "layout": [
+    { "src": "/pcb/demo-a/layout/top.svg", "caption": "Top view — layout placeholder" },
+    { "src": "/pcb/demo-a/layout/bottom.svg", "caption": "Bottom view — layout placeholder" }
+  ],
+  "model3d": { "model": "/pcb/demo-a/3d/board.glb", "preview": "/pcb/demo-a/3d/preview.svg", "renders": [] },
+  "photos": [{ "src": "/pcb/demo-a/photos/photo-placeholder.svg", "caption": "Photograph pending — illustration only", "alt": "Labeled illustration standing in for a future board photograph" }],
+  "downloads": [{ "label": "Example documentation (demo only)", "file": "/pcb/demo-a/files/example-notes.txt" }],
+  "notes": "All assets are labeled examples. The interactive cuboid uses arbitrary display units and is not a dimensional PCB model. Technical specifications, revision, and testing status are intentionally omitted.",
+  "createdAt": "2026-09-11",
+  "updatedAt": "2026-09-11"
+}

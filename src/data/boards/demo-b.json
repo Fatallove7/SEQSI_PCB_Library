@@ -1,0 +1,22 @@
+{
+  "id": "DEMO-B",
+  "slug": "demo-b-renders",
+  "title": "Static render example",
+  "year": 2025,
+  "category": "filter-board",
+  "designer": ["Demo contributor B"],
+  "description": "An example showing schematic, layout, and photo placeholders with a static 3D preview.",
+  "demo": true,
+  "tags": ["demo", "static render"],
+  "thumbnail": "/pcb/demo-b/thumbnail.svg",
+  "schematic": { "images": ["/pcb/demo-b/schematic/page-1.svg"] },
+  "layout": [
+    { "src": "/pcb/demo-b/layout/top.svg", "caption": "Top view — layout placeholder" },
+    { "src": "/pcb/demo-b/layout/bottom.svg", "caption": "Bottom view — layout placeholder" }
+  ],
+  "model3d": { "preview": "/pcb/demo-b/3d/preview.svg" },
+  "photos": [{ "src": "/pcb/demo-b/photos/photo-placeholder.svg", "caption": "Photograph pending — illustration only" }],
+  "notes": "This example deliberately has no interactive model or manufacturing files. All images are placeholders.",
+  "createdAt": "2026-09-10",
+  "updatedAt": "2026-09-11"
+}
