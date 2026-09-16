@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { boardCategories } from "@/data/categories";
-import { getBoards } from "@/lib/boards";
+import { getPublishedBoards as getBoards } from "@/lib/admin/public-boards";
 
 export const metadata = { title: "Categories" };
 export default function CategoriesPage() {

@@ -4,6 +4,8 @@ import { Navbar } from "@/components/Navbar";
 import { site } from "@/config/site";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: { default: site.title, template: `%s | ${site.title}` },
   description: site.description,

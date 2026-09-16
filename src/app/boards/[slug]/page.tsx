@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getBoards } from "@/lib/boards";
+import { getPublishedBoards as getBoards } from "@/lib/admin/public-boards";
 import { boardCategories } from "@/data/categories";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ModelViewer } from "@/components/ModelViewer";
@@ -10,13 +10,6 @@ import { DownloadList } from "@/components/DownloadList";
 import { assetUrl } from "@/lib/assets";
 import { site } from "@/config/site";
 
-export const dynamicParams = false;
-export function generateStaticParams() {
-  const boards = getBoards();
-  // Static export requires one parameter even for an empty archive. This reserved
-  // value cannot be a valid record slug and is rendered through notFound().
-  return boards.length ? boards.map(board => ({ slug: board.slug })) : [{ slug: "__empty__" }];
-}
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

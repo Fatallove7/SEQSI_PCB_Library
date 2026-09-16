@@ -1,6 +1,12 @@
 # Adding a PCB to the library
 
-The archive is generated from JSON records. You do not need to edit React pages, component imports, or a year list.
+The live archive is managed through `/admin`. Sign in, choose **Manual Upload** or **Import Altium Project**, create a draft, upload the available files, review the preview, and explicitly **Publish**. Metadata and assets persist without rebuilding. Visitors continue to browse anonymously.
+
+Use **Save Draft** for edits that must remain private. **Archive** hides a board and its assets; Admin can restore it to Draft. Permanent deletion is a separate Admin-only action with typed PCB-ID confirmation. See [README.md](../README.md) for setup, supported uploads, limits, and the separate Altium-worker integration task.
+
+## Legacy JSON import reference
+
+The instructions below describe preparation of legacy seed records. They remain supported through `npm run db:migrate`; changing these files does not update an already migrated runtime board. Use Admin for subsequent edits. No React page, component import, or year list needs changing.
 
 ## 1. Choose identifiers
 

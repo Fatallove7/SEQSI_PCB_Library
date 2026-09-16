@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getBoards, getYears } from "@/lib/boards";
+import { getPublishedBoards as getBoards } from "@/lib/admin/public-boards";
+import { getYears } from "@/lib/boards";
 
 export const metadata = { title: "Years" };
 export default function YearsPage() {

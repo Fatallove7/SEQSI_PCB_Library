@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Catalog } from "@/components/Catalog";
-import { getBoards, getBoardSummaries } from "@/lib/boards";
+import { getPublishedBoards as getBoards } from "@/lib/admin/public-boards";
+import { getBoardSummaries } from "@/lib/boards";
 
 export const metadata: Metadata = { title: "Boards", description: "Search and browse PCB designs by category, year, and designer." };
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getBoards, getBoardSummaries, getYears } from "@/lib/boards";
+import { getPublishedBoards as getBoards } from "@/lib/admin/public-boards";
+import { getBoardSummaries, getYears } from "@/lib/boards";
 import { boardCategories } from "@/data/categories";
 import { BoardGrid } from "@/components/BoardCard";
 import { site } from "@/config/site";

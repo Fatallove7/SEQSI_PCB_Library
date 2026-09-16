@@ -4,6 +4,7 @@ test("home navigation and responsive layouts", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "PCB Library", exact: true })).toBeVisible();
   await expect(page.locator(".board-card")).toHaveCount(3);
+  await expect(page.locator(".board-card").first()).toContainText("DEMO-A");
   await expect(page.locator(".category-card")).toHaveCount(9);
   await page.screenshot({ path: testInfo.outputPath("home.png"), fullPage: true });
   await page.getByRole("searchbox", { name: "Search PCB archive" }).fill("DEMO-A");

@@ -844,7 +844,7 @@ For technical detail pages:
 Desktop:
 
 ```text
-main content + optional metadata sidebar
+section navigation + main technical content (see Section 30.17)
 ```
 
 Mobile:
@@ -1106,602 +1106,322 @@ Do not reorganize an existing project unnecessarily.
 
 # 30. Visual Design Specification
 
-## 30.1 Primary Visual Style
+This section documents the approved visual system currently implemented in the application and is the source of truth for future UI work. New pages and components must reuse the existing design tokens, typography system, spacing, and component styling defined here. Do not introduce a new visual language without explicitly updating this specification.
 
-Use the following visual direction:
+The values below are synchronized with [src/app/globals.css](src/app/globals.css), the shared components in [src/components](src/components), and their usage in [src/app](src/app). The approved implementation is the basis for this specification; these are implemented values, not alternative design proposals.
+
+## 30.1 Primary Visual Style
 
 **Modern Minimal Engineering Documentation**
 
-Secondary characteristics:
-
-- Academic
-- Technical
-- Precise
-- Calm
-- Information-dense but uncluttered
-
-The site should visually resemble a modern technical documentation portal or engineering design archive, not a portfolio, SaaS landing page, or marketing website.
-
-The TU Delft PCB website should primarily be treated as an information architecture reference, not something to visually clone.
+The visual character is clean, modern, technical, precise, spacious, and restrained. White and pale sage-gray surfaces, forest-green accents, near-black headings, thin structural lines, and Manrope typography support an engineering archive. Technical content remains the focus; the site is not a marketing landing page.
 
 ---
 
 ## 30.2 Visual Hierarchy
 
-The hierarchy should prioritize:
+PCB schematic, layout, 3D rendering, and physical photographs remain the primary visual content on detail pages. The text hierarchy is:
 
 ```text
-PCB Images
+Page / PCB title
 ↓
-PCB Name / PCB ID
+Major technical section heading
 ↓
-Technical Information
+PCB card title
 ↓
-Metadata
+Description
 ↓
-Secondary Controls
+Metadata and secondary controls
 ```
 
-PCB schematic, layout, 3D rendering, and physical photographs should visually dominate PCB detail pages.
-
-Navigation, decorative elements, and metadata should remain visually secondary.
+PCB IDs use a clear technical monospace treatment, secondary in scale to the PCB title. Navigation and metadata remain compact.
 
 ---
 
 ## 30.3 Color Palette
 
-Use a restrained neutral palette.
+The semantic palette is defined in `:root` in `src/app/globals.css`.
 
-Recommended base palette:
+| Role | CSS variable | Implemented value |
+| --- | --- | --- |
+| Background | `--background` | `#ffffff` |
+| Secondary background | `--background-secondary` | `#f4f6f3` |
+| Surface | `--surface` | `#ffffff` |
+| Elevated surface | `--surface-elevated` | `#fafcf9` |
+| Primary text | `--text-primary` | `#141e18` |
+| Secondary text | `--text-secondary` | `#4e5e54` |
+| Muted text | `--text-muted` | `#606f64` |
+| Border | `--border` | `#dde4dc` |
+| Strong border | `--border-strong` | `#aab9ad` |
+| Primary accent | `--accent` | `#355e43` |
+| Accent hover | `--accent-hover` | `#234831` |
+| Accent soft | `--accent-soft` | `#edf3e8` |
+| Text on accent | `--text-on-accent` | `#ffffff` |
+| Lightbox backdrop | `--overlay` | `rgb(14 24 18 / .82)` |
 
-```text
-Background:
-#FFFFFF
-
-Secondary Background:
-#F7F7F8
-
-Card / Panel Background:
-#FFFFFF
-
-Primary Text:
-#18181B
-
-Secondary Text:
-#71717A
-
-Border:
-#E4E4E7
-
-Hover Background:
-#F4F4F5
-```
-
-Use only one primary accent color.
-
-Recommended accent:
-
-```text
-Primary Accent:
-#2563EB
-```
-
-Use the accent color mainly for:
-
-- links;
-- active navigation;
-- selected filters;
-- important buttons;
-- interactive highlights.
-
-Status labels may use subtle semantic colors where appropriate.
+There is no separate success, warning, error, or PCB-status color palette. Status badges and tags use `--background-secondary`, `--text-muted`, and `--border`; status text is capitalized. Demo badges use `--surface` with muted text. Notices, including invalid-filter notices, use `--surface-elevated`, muted text, and a strong left border rather than a status-specific color.
 
 ---
 
 ## 30.4 Color Usage Rules
 
-Do not use:
+- Page, card, navigation, input, and gallery surfaces are white.
+- Secondary background is used for filters, the footer, image placeholders, thumbnail containers, and 3D viewer containers.
+- Primary text provides heading contrast; descriptions use secondary text, and metadata uses muted text.
+- Forest green is used for links, PCB IDs, eyebrow labels, primary buttons, focus outlines, and active navigation.
+- Soft accent backgrounds provide restrained hover feedback on secondary buttons, category cards, year links, tags, and download rows.
+- Selected filter controls retain the normal white input surface; they do not have a separate accent-filled selection style.
 
-- large gradients;
-- neon colors;
-- high-saturation backgrounds;
-- rainbow color schemes;
-- large colored page sections;
-- glassmorphism;
-- excessive transparency effects.
-
-Most of the site should remain white, light gray, and dark gray with a small amount of accent color.
+Do not introduce gradients, neon effects, saturated page backgrounds, or decorative overlays. Image and model asset colors are content, not additional UI palette tokens.
 
 ---
 
-## 30.5 Typography
+## 30.5 Typography and Type Scale
 
-Use a clean modern sans-serif typeface.
+The primary family is `--font-primary: "Manrope", Arial, sans-serif`. Manrope is loaded through a local `@font-face` in `globals.css` from `src/app/fonts/manrope-latin-variable.woff2`, with normal style, weight range `400 700`, and `font-display: swap`. Its license is included in `src/app/fonts/OFL.txt`. The root layout imports `globals.css`; no `next/font` configuration or secondary sans-serif family is used.
 
-Preferred fallback order:
+PCB IDs and download file extensions use `--font-technical: ui-monospace, SFMono-Regular, Consolas, monospace`. Inline `code` retains Tailwind's default monospace stack; it is not explicitly assigned `--font-technical`.
 
-```text
-Inter
-Geist
-system-ui
-Arial
-sans-serif
-```
+| Typography token | Implemented value | Usage |
+| --- | --- | --- |
+| `--weight-body` | `400` | Body and catalog input/select text |
+| `--weight-medium` | `500` | PCB IDs, buttons, navigation, labels, metadata values |
+| `--weight-heading` | `600` | Headings, brand, eyebrow labels |
+| `--line-body` | `1.65` | Body and lead text; inherited by most controls and metadata |
+| `--line-heading` | `1.16` | `h1`, `h2`, `h3` |
+| `--tracking-heading` | `-.04em` | Default heading letter spacing |
 
-Do not introduce decorative fonts.
+Card titles override heading line-height to `1.35`. Homepage title letter spacing is `-.045em`; brand text is `-.02em`; PCB IDs use `.03em`; uppercase eyebrow labels use `.07em`; the PCB brand mark uses `.02em`. Technical specification values use `font-variant-numeric: tabular-nums` while retaining the primary sans-serif family. Ordinary `strong` text keeps the default bold treatment unless a component overrides it, as notices do with weight `500`.
 
-Suggested typography scale:
+The following expressions are the actual tokens; retain their responsive formulas rather than substituting approximate pixel ranges.
 
-```text
-Page Title:
-32–40 px
+| Text role | Token | Implemented value / responsive override |
+| --- | --- | --- |
+| Homepage primary title | `--type-home` | `clamp(3rem, 4vw, 3.5rem)`; at `max-width: 1000px`: `clamp(2.25rem, 4.4vw, 2.75rem)`; at `max-width: 640px`: `clamp(1.875rem, 8vw, 2.25rem)` |
+| Page title, including catalog and category/year index page titles | `--type-page` | `clamp(2rem, 3.5vw, 3rem)` |
+| PCB detail title | `--type-detail` | `clamp(2rem, 3.6vw, 2.75rem)` |
+| Major section heading; category/year section and index-entry headings | `--type-section` | `clamp(1.5rem, calc(1rem + 1.25vw), 2rem)` |
+| PCB card title; default `h3`; brand; homepage year links | `--type-card` | `clamp(1.125rem, 1.5vw, 1.375rem)` |
+| PCB ID | `--type-id` | `clamp(.875rem, 1.1vw, 1rem)` |
+| Body, card description, search input, download label, technical specification table | `--type-body` | `1rem`; technical table rows use `--type-small` on mobile |
+| Supporting lead; homepage category-card title | `--type-lead` | `clamp(1rem, 1.3vw, 1.0625rem)`; `.lead` text uses `--type-body` on mobile |
+| Card metadata, overview values, buttons, desktop/tablet navigation, filter selects | `--type-meta` | `.875rem`; mobile navigation uses `--type-small`, mobile filter selects use `--type-body` |
+| Labels, overview terms, captions, breadcrumbs, detail navigation, results, footer, dates, file extensions | `--type-small` | `.8125rem` |
+| Eyebrows, badges, tags, PCB brand mark | `--type-label` | `.75rem` |
 
-PCB Detail Title:
-28–36 px
-
-Section Heading:
-20–24 px
-
-Card Title:
-16–18 px
-
-Body:
-14–16 px
-
-Metadata:
-13–14 px
-```
-
-Avoid extremely large hero text.
-
-The site is an engineering archive, not a marketing landing page.
+Additional existing compact treatments: section-heading links and mobile lightbox buttons use `--type-small`; archive statistics use `--type-small` normally and `--type-label` on mobile; category/year index descriptions and counts use `--type-meta` normally and `--type-small` on mobile. Empty-state `h2` headings use `--type-card`.
 
 ---
 
-## 30.6 Layout
+## 30.6 Layout and Spacing
 
-Use generous but controlled whitespace.
+Spacing creates hierarchy around titles, related content, and technical sections. The shared scale is based on 4px increments; it is not a blanket increase to every margin.
 
-Recommended maximum content width:
+| Token | Value | Token | Value |
+| --- | --- | --- | --- |
+| `--space-1` | `4px` | `--space-2` | `8px` |
+| `--space-3` | `12px` | `--space-4` | `16px` |
+| `--space-5` | `20px` | `--space-6` | `24px` |
+| `--space-7` | `28px` | `--space-8` | `32px` |
+| `--space-10` | `40px` | `--space-12` | `48px` |
+| `--space-14` | `56px` | `--space-16` | `64px` |
+| `--space-20` | `80px` | | |
 
-```text
-1200–1400 px
-```
+`--content-width: 1280px` defines the inner content limit. `.container` has `width: 100%`, centered margins, horizontal padding `var(--page-gutter)`, and `max-width: calc(var(--content-width) + 2 * var(--page-gutter))`. The desktop outer limit is therefore 1360px including gutters.
 
-Desktop horizontal page padding:
+`--page-gutter` is `var(--space-10)` by default, `var(--space-6)` at `max-width: 1000px`, and `var(--space-5)` at `max-width: 640px`. The prose page has an additional `800px` maximum width; supporting lead text is limited to `740px`.
 
-```text
-24–40 px
-```
+| Area | Implemented spacing |
+| --- | --- |
+| Page heading | `48px` top / `32px` bottom; mobile `32px` / `24px` |
+| Homepage introduction | `48px` top / `28px` bottom; mobile top `32px` |
+| Homepage section | `48px` top margin; mobile `32px` |
+| Section heading group | `24px` bottom margin, `20px` internal gap; mobile gap `12px` |
+| PCB card body | `24px` padding |
+| Board and image grids | `24px` gap |
+| Filter panel | `24px` padding; mobile `16px` |
+| Filter row | `16px` top margin and gap; mobile gap `12px` |
+| Detail header | `32px` vertical padding |
+| Detail columns | `40px` gap and top margin; tablet gap `24px`; mobile top margin `24px` |
+| Technical section | `48px` bottom padding, `40px` bottom margin, bottom divider; heading bottom margin `24px` |
+| Overview metadata | Wrapping rows, `20px` row / `40px` column gap; mobile column gap `24px` |
+| Technical table row | `16px` vertical padding; `24px` column gap, mobile `16px` |
+| Download row | `20px` vertical / `12px` horizontal padding, `16px` internal gap |
+| Main content bottom | `80px`; mobile `48px` |
+| Footer | `32px` vertical padding, `24px` gap |
 
-Mobile horizontal padding:
-
-```text
-16–20 px
-```
-
-Use consistent vertical spacing.
-
-Suggested spacing system:
-
-```text
-4
-8
-12
-16
-24
-32
-48
-64 px
-```
-
-Prefer an 8 px spacing rhythm where practical.
+The main content minimum height is `calc(100vh - 230px)`. In-page navigation uses `scroll-padding-top: 96px` on `html` and `scroll-margin-top: 24px` on technical sections.
 
 ---
 
 ## 30.7 Border Radius
 
-Keep corner radius subtle.
+Geometry is near-square with small corner radii.
 
-Recommended:
+| Token | Value | Usage |
+| --- | --- | --- |
+| `--radius-small` | `4px` | Brand mark, badges, tags, notices, missing-content blocks, enlarge labels, download rows |
+| `--radius-control` | `6px` | Buttons, inputs, selects, year links, gallery triggers, model containers |
+| `--radius-panel` | `8px` | PCB cards, category grid container, filter panel, empty state, lightbox |
 
-```text
-Small UI elements:
-4–6 px
-
-Cards:
-6–8 px
-
-Large panels:
-8 px maximum
-```
-
-Avoid highly rounded cards unless there is a specific UX reason.
-
-The UI should feel precise and technical.
+There are no pill-shaped controls or larger shared radius values.
 
 ---
 
 ## 30.8 Borders and Shadows
 
-Prefer thin borders over heavy shadows.
+Default borders are `1px solid var(--border)` on cards, controls, panels, gallery/model containers, and section dividers. Category-grid internal divisions use a `1px` gap over the border-colored grid background. Empty states use a `1px dashed var(--border)` border. Notices have a `2px solid var(--border-strong)` left border. Navigation reserves a `2px` bottom border for the active state.
 
-Default card treatment:
-
-```text
-1 px solid light-gray border
-white background
-minimal or no shadow
-```
-
-Allowed:
-
-- very subtle hover shadow;
-- subtle shadow for lightboxes/dialogs.
-
-Avoid:
-
-- large drop shadows;
-- floating glass cards;
-- multiple shadow layers.
+The application defines no box-shadow or text-shadow styling, including hover and lightbox states. Separation comes from borders, spacing, and surface colors. There are no shared shadow tokens and no card lift on hover.
 
 ---
 
 ## 30.9 PCB Cards
 
-PCB cards should be visually simple.
+The entire card is a link. Its existing content order is thumbnail, PCB ID, PCB title, category/year, designer, description, and the bottom-aligned “View board” link treatment.
 
-Preferred structure:
+The thumbnail container uses `aspect-ratio: 16 / 10`, secondary background, and a bottom border. Images use `object-fit: contain`; technical content is not cropped to fill the container. The body has `24px` padding. Card title margins are `8px` above and `12px` below; description margin is `12px` above; the bottom link has `24px` top padding. Title and metadata sizes follow Section 30.5.
 
-```text
-┌──────────────────────────────┐
-│                              │
-│        PCB Thumbnail         │
-│                              │
-├──────────────────────────────┤
-│ 26-003                       │
-│ MicroD25 Resistor Adapter    │
-│                              │
-│ Adapter Board · 2026         │
-│ Designer: XXX                │
-└──────────────────────────────┘
-```
-
-Requirements:
-
-- large thumbnail area;
-- PCB image is the strongest visual element;
-- no decorative background illustration;
-- PCB ID is clear;
-- PCB title is prominent;
-- metadata uses smaller secondary text;
-- entire card may be clickable.
-
-Hover behavior should remain subtle.
-
-Example:
-
-```text
-slightly darker border
-or
-1–2 px upward movement
-```
-
-Do not use dramatic animations.
+Cards use a white surface, `1px` border, and `8px` radius. Hover changes only the border to `--accent` through the shared transition, without underline, shadow, or movement.
 
 ---
 
 ## 30.10 PCB Detail Page
 
-The PCB detail page should feel like technical documentation.
+The existing presentation is breadcrumb, ID/status row, PCB title, description, overview metadata, tags, optional demo notice, then section navigation alongside the technical content. Schematic, PCB layout, 3D model, physical board, technical specifications, and downloads use the shared section heading scale and thin horizontal dividers. Technical sections are not individually wrapped in heavy cards.
 
-Recommended structure:
+Overview metadata wraps naturally; terms use muted small text and values use medium-weight metadata text. Technical specification rows use `minmax(160px, 1fr) 2fr` columns, muted terms, and primary-text values with tabular numerals. Values retain line breaks and wrap long content with `overflow-wrap: anywhere`. The mobile table stays in two columns as specified in Section 30.17.
 
-```text
-Breadcrumb
-
-PCB ID + PCB Name
-Short Description
-
-Metadata / Status
-
-────────────────────────
-
-Schematic
-
-[ Large Technical Images ]
-
-────────────────────────
-
-PCB Layout
-
-[ Large Technical Images ]
-
-────────────────────────
-
-3D Model
-
-[ Model Viewer ]
-
-────────────────────────
-
-Physical Board
-
-[ Photo Gallery ]
-
-────────────────────────
-
-Technical Specifications
-
-────────────────────────
-
-Downloads
-```
-
-Use whitespace or subtle horizontal dividers to separate major sections.
-
-Do not wrap every section inside a visually heavy card.
-
-Large engineering images should have room to breathe.
+Download rows use accent-colored labels, small muted monospace extensions, subtle bottom borders, and an accent-soft hover background. Missing-content blocks remain neutral and use the existing explicit missing-data messages.
 
 ---
 
 ## 30.11 Navigation
 
-Use a compact documentation-style navigation bar.
+The white header has a `1px` bottom border. `.nav-inner` has `min-height: 64px`, with brand and links in a horizontal row above the mobile breakpoint. The brand uses the card type scale, weight `600`, and `12px` spacing around the mark. The fallback PCB mark is `28px` high with near-black background, white text, and `4px` radius; a configured logo is rendered at `28px × 28px`.
 
-Example:
+Main link gaps are `28px` by default and `20px` at `max-width: 1000px`. Links use muted text, weight `500`, and the metadata scale; hover/focus changes text to the accent. `[aria-current="page"]` applies accent text and an accent-colored `2px` bottom border. There is no custom pressed-state treatment.
 
-```text
-<Group PCB Library>
-
-Boards
-Categories
-Years
-About
-```
-
-Recommended navbar height:
-
-```text
-56–64 px
-```
-
-Use a subtle bottom border.
-
-Avoid:
-
-- oversized logos;
-- mega menus;
-- animated navigation;
-- unusually tall navigation bars.
+On mobile, brand and navigation become two rows, links remain visible, and the header grows with its content rather than enforcing a fixed height. Link sizing and spacing are specified in Section 30.17. The header itself is not sticky.
 
 ---
 
 ## 30.12 Homepage
 
-Keep the homepage simple.
+The existing homepage retains its eyebrow, configured site title, supporting description, search, archive statistics, optional demo notice, category grid, year links, and latest boards. The title uses `--type-home`, with whitespace defined in Section 30.6 and no full-screen hero.
 
-Do not create a large marketing hero.
+The horizontal search form has a `640px` maximum width, `8px` gap, and `28px` top margin (`24px` on mobile). Its input is `46px` high. The form remains a row on mobile.
 
-Preferred structure:
-
-```text
-<Group Name> PCB Library
-
-PCB design archive for our research group.
-
-[ Search PCB... ]
-```
-
-Then:
-
-```text
-Browse by Category
-
-Browse by Year
-
-Latest Boards
-```
-
-Keep the hero height modest so PCB content appears early in the page.
+The category grid has three columns until the mobile breakpoint. Category cells use `20px 24px` padding, a white surface, and a soft accent hover background; mobile padding is `16px 20px`. The year section uses top/bottom dividers and `28px` vertical padding; year links wrap with `12px` gaps.
 
 ---
 
-## 30.13 Search and Filters
+## 30.13 Search, Filters, and Shared Controls
 
-Search and filter controls should resemble modern technical software/documentation controls.
+The catalog places a full-width search input above four native select controls in a `1.3fr 1fr 1fr 1fr` grid. The filter panel uses the secondary background and a thin border. Search text is `--type-body`; select text is `--type-meta` until the mobile breakpoint.
 
-Use:
+Selected values remain visible in the native selects, using the same surface and border treatment as unselected controls. The results toolbar and conditional “Clear filters” text button indicate the current filtered view. There are no selected-filter chips or custom-colored option menus; native option rendering is browser-dependent.
 
-- simple bordered inputs;
-- compact dropdowns;
-- small filter chips.
+Shared inputs/selects have `min-height: 44px`, `10px 12px` padding, `6px` radius, white background, and muted placeholder text. Labels use weight `500`, `--type-small`, and a `6px` gap. Focus changes the control border to `--accent`.
 
-Avoid:
-
-- oversized pill buttons;
-- large animated controls;
-- bright saturated filter backgrounds.
-
-Selected filters may use the accent color.
+Shared `.button` controls use `min-height: 40px`, `8px 16px` padding, `12px` gap, `6px` radius, weight `500`, and `--type-meta`. Secondary button hover uses `--accent-soft`; primary buttons use accent background and white text, darkening to `--accent-hover` on hover. Text buttons underline on hover. Disabled buttons use `opacity: .45` and the default cursor.
 
 ---
 
-## 30.14 Image Presentation
+## 30.14 Image Presentation and Lightbox
 
-Technical images are a primary part of the site.
+Schematic images, layout images, 3D renders, and physical photographs use the shared gallery. Galleries have two equal columns with `24px` gaps; a single-image gallery always uses one column, and all galleries become one column on mobile. Gallery triggers use white backgrounds, thin borders, and `6px` radii. Images use `width: 100%`, `height: auto`, and `object-fit: contain`. Captions use `--type-small`, with `8px` top padding. Hover strengthens the trigger border to `--border-strong`.
 
-For schematic and layout images:
-
-- use white or neutral background;
-- preserve original aspect ratio;
-- do not crop technical images unnecessarily;
-- allow fullscreen/lightbox viewing;
-- allow high-resolution viewing.
-
-Do not use strong shadows around schematic/layout screenshots.
-
-For physical PCB photographs:
-
-- use consistent thumbnail ratios where practical;
-- preserve access to the original full image in the lightbox.
+The lightbox uses `width: min(1400px, 96vw)`, `max-width: 96vw`, `max-height: 94vh`, `16px` padding (`10px` on mobile), `8px` radius, white surface, and the `--overlay` backdrop. Its image uses automatic width/height with `max-width: 100%` and `max-height: 68vh`. Existing original-image access and gallery controls are preserved. No custom fade or shadow is defined.
 
 ---
 
 ## 30.15 3D Model Viewer
 
-Use a neutral 3D viewer background.
+Model poster and interactive containers use `--background-secondary: #f4f6f3`, `1px` borders, and `6px` radii. Poster images are contained in a `260px`-high area. The interactive `model-viewer` element has inline `width: "100%"` and `height: "420px"` in `src/components/InteractiveModel.tsx`; this height is not a global design token and has no mobile override.
 
-Recommended:
-
-```text
-#F7F7F8
-```
-
-Controls should remain subtle.
-
-Do not add decorative 3D environments unless they help explain the PCB.
+Model sections use `24px` gaps. The controls wrap, are centered, and use `12px` gaps and `16px` padding. In fullscreen, the container becomes a vertically centered flex column with scrolling available and the viewer set to `flex: 1`. No decorative 3D environment is configured by the application. Existing load-on-request behavior and camera controls are unchanged.
 
 ---
 
-## 30.16 Animation
+## 30.16 Interactive States and Motion
 
-Keep animation minimal.
+The shared transition is `--transition-ui: 160ms ease`. It applies to background and/or border colors on controls, category cards, PCB cards, gallery triggers, and download rows; navigation transitions text and border colors. No custom entrance, lightbox fade, card movement, animated background, or continuous animation is implemented.
 
-Allowed:
+Default links underline on hover with `text-underline-offset: 4px`; component links override that where their border/background already provides feedback. Tags hover to accent-soft background with strong borders. Category/year index rows and detail section-navigation links hover to the secondary background; section-navigation text also changes to the accent. The section navigation does not implement a scroll-tracking active state.
 
-```text
-150–200 ms hover transition
-lightbox fade
-dropdown transition
-minor button feedback
-```
+Global `:focus-visible` uses `outline: 2px solid var(--accent)` and `outline-offset: 4px`. The skip link becomes visible on focus. Main navigation's active state is defined in Section 30.11; filter selection presentation is defined in Section 30.13. No shared custom `:active` pressed style is defined.
 
-Avoid:
-
-- scroll animations;
-- parallax;
-- large entrance animations;
-- animated gradients;
-- 3D card tilt;
-- continuous motion.
-
-Animation must never distract from engineering data.
+Under `prefers-reduced-motion: reduce`, all elements and pseudo-elements use `transition: none !important` and `scroll-behavior: auto !important`.
 
 ---
 
 ## 30.17 Responsive Behavior
 
-Desktop:
+The actual CSS breakpoints are `@media (max-width: 1000px)` and `@media (max-width: 640px)`. Mobile rules follow and override tablet rules. Responsive `clamp()` expressions are preserved in Section 30.5.
 
-```text
-clean multi-column layout where useful
-```
+| Area | Desktop: above 1000px | Tablet: above 640px through 1000px | Mobile: 640px and below |
+| --- | --- | --- | --- |
+| Horizontal gutter | `40px` | `24px` | `20px` |
+| Board grid | 3 columns | 2 columns | 1 column |
+| Homepage category grid | 3 columns | 3 columns | 1 column |
+| Gallery | 2 columns; single image uses 1 | Same | 1 column |
+| Detail layout | `176px minmax(0, 1fr)`, `40px` gap | 1 column, `24px` gap | 1 column, `24px` gap and top margin |
+| Detail section navigation | Sticky at `top: 28px`, vertical links, left border | Static, wrapping horizontal links, bottom border; eyebrow/back link hidden | Same as tablet |
+| Main navbar | Brand and links on one row, `28px` link gaps | Same row, `20px` link gaps | Brand above full-width links; `12px` top padding, `12px` link gaps, `space-between`; link padding `12px 0 10px`, text `--type-small` |
+| Catalog filter row | `1.3fr 1fr 1fr 1fr`, `16px` gap | Same | 1 column, `12px` gap; select text `--type-body`, padding `10px 8px` |
+| Overview metadata | Wrapping, `20px 40px` gaps | Same | Wrapping, `20px 24px` gaps |
+| Specification table | `minmax(160px, 1fr) 2fr`, `24px` gap | Same | `1fr 1.2fr`, `16px` gap, text `--type-small` |
+| Section heading group | Horizontal with `20px` gap | Same | Wraps, baseline-aligned, `12px` gap |
+| Year section / footer | Horizontal flex layout | Same | Vertical, left-aligned |
 
-Tablet:
-
-```text
-reduced number of columns
-```
-
-Mobile:
-
-```text
-single-column layout
-```
-
-PCB images must remain readable.
-
-Do not shrink schematic/layout images into tiny multi-column grids on small screens.
+Mobile also reduces page/home spacing as documented above, sets lead text to `--type-body`, and reduces lightbox toolbar gaps to `8px`; lightbox buttons use `--type-small` and `8px` padding. Images continue to preserve their aspect ratios. The table and homepage search form intentionally remain multi-column/row structures within the otherwise single-column mobile page.
 
 ---
 
 ## 30.18 Dark Mode
 
-Do not implement dark mode in V1 unless it already exists in the repository.
-
-The default design target is light mode.
-
-The architecture may remain compatible with future dark mode support.
+The approved implementation is light mode only. There is no dark-mode palette, theme toggle, or color-scheme media override. Future dark-mode work requires an explicit specification update.
 
 ---
 
-## 30.19 Design Tokens
+## 30.19 Design Tokens and Implementation Locations
 
-Create shared design tokens or consistent reusable styling for:
+`src/app/globals.css` owns the color, font, type, spacing, radius, content-width, and transition tokens, shared component selectors, and responsive overrides. `src/app/layout.tsx` imports it and applies the shared container, header, main, and footer structure. Component/page markup reuses these classes.
 
-- colors;
-- spacing;
-- font sizes;
-- border radius;
-- content width;
-- border color;
-- interactive states.
+Tailwind CSS is imported with `@import "tailwindcss"` and configured through the `@tailwindcss/postcss` plugin in `postcss.config.mjs`. There is no separate `tailwind.config.*` file or additional application CSS stylesheet. Existing `@theme inline` aliases are:
 
-Do not repeat arbitrary visual values throughout components.
+| Tailwind theme alias | Semantic source |
+| --- | --- |
+| `--color-background` | `var(--background)` |
+| `--color-surface` | `var(--background-secondary)` |
+| `--color-ink` | `var(--text-primary)` |
+| `--color-muted` | `var(--text-muted)` |
+| `--color-border` | `var(--border)` |
+| `--color-accent` | `var(--accent)` |
+| `--font-sans` | `var(--font-primary)` |
 
-If Tailwind is used, reuse consistent utility patterns.
+The Tailwind `surface` alias intentionally maps to the secondary background, whereas the raw `--surface` token is white. Reuse the applicable existing token/class rather than introducing a parallel palette or arbitrary per-page type/spacing values. The inline model dimensions documented in Section 30.15 are an existing component-specific exception.
 
 ---
 
 ## 30.20 Design References
 
-Use the following design concepts as inspiration:
+The approved visual atmosphere adapts the color relationships, sans-serif typography, whitespace, and structural clarity of `design-reference/huaban-tech-reference1.png` through `design-reference/huaban-tech-reference4.png`. These references are inspiration, not application assets or pixel-for-pixel layout targets. The unnumbered `huaban-tech-reference.png` file is not present in the repository.
 
-- modern technical documentation;
-- GitHub documentation;
-- Vercel documentation;
-- engineering equipment catalogs;
-- academic laboratory websites.
-
-Do not copy exact branding, CSS, images, layouts, or copyrighted content from any reference.
+The TU Delft reference remains an information-architecture reference. Do not copy reference branding, imagery, copyrighted text, or exact layouts. Future work follows the approved tokens above rather than importing another documentation site's visual system.
 
 ---
 
 ## 30.21 Explicitly Avoid
 
-Do not create a site that looks like:
-
-- a SaaS landing page;
-- a startup homepage;
-- a portfolio website;
-- an e-commerce store;
-- a social-media dashboard.
-
-Avoid:
-
-- huge hero typography;
-- gradient buttons;
-- glassmorphism;
-- excessive cards;
-- very large rounded corners;
-- floating decorative blobs;
-- decorative illustrations;
-- stock photography;
-- excessive icon usage.
-
-The PCB itself should provide most of the visual interest.
+Preserve the engineering archive character. Do not introduce oversized marketing heroes, gradient buttons, glassmorphism, heavy shadows, large rounded cards, card tilt/lift, animated backgrounds, decorative illustrations, stock photography, or unnecessary icons. Do not hide technical information or replace large readable images with decorative content.
 
 ---
 
 ## 30.22 Final Visual Goal
 
-The final website should communicate:
-
-```text
-"This is a carefully maintained engineering PCB archive."
-```
-
-rather than:
-
-```text
-"This is a promotional website."
-```
-
-When visual decoration conflicts with technical readability:
-
-**always prioritize technical readability.**
+The website should communicate a carefully maintained engineering PCB archive through clear headings, deliberate whitespace, restrained forest-green accents, and readable technical media. Technical readability takes priority over decoration. All future visual work must remain consistent with this documented implementation.
 
 ---
 

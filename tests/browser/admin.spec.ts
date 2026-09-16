@@ -1,0 +1,95 @@
+import { test, expect } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+
+test("anonymous public browsing and administrative authorization boundary",async({page,request})=>{
+  await page.goto("/boards/");await expect(page.locator(".board-card")).toHaveCount(3);
+  await page.goto("/admin/boards/");await expect(page).toHaveURL(/\/admin\/login/);
+  for(const url of ["/api/admin/boards/","/api/admin/boards/unknown/"]) expect((await request.get(url)).status()).toBe(401);
+  expect((await request.post("/api/admin/boards/",{headers:{Origin:"http://localhost:4173"},data:{}})).status()).toBe(401);
+  expect((await request.post("/api/admin/login/",{headers:{Origin:"https://wrong.example"},data:{username:"x",password:"x"}})).status()).toBe(403);
+  expect((await request.post("/api/admin/signup/",{data:{}})).status()).toBe(404);
+});
+
+test("administrator can upload, publish, edit privately, archive, restore and delete",async({page,browser},testInfo)=>{
+  const id=`TEST-${randomUUID().slice(0,8)}`;const slug=id.toLowerCase();
+  const visitor=await browser.newContext();const publicPage=await visitor.newPage();
+  await page.goto("/admin/login/");
+  await page.getByLabel("Username",{exact:true}).fill("browser-test-admin");
+  await page.getByLabel("Password",{exact:true}).fill("Browser-test-password-2026");
+  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/boards/);
+  await page.getByRole("link",{name:"+ Manual Upload",exact:true}).click();
+  await page.getByLabel("PCB ID",{exact:true}).fill(id);
+  await page.getByLabel("URL slug",{exact:true}).fill(slug);
+  await page.getByLabel("PCB name",{exact:true}).fill("Browser workflow board");
+  await page.getByLabel("Description",{exact:true}).fill("Test record only; no technical data.");
+  await page.getByLabel("Designer(s), comma-separated").pressSequentially("Alice, Bob");
+  await expect(page.getByLabel("Designer(s), comma-separated")).toHaveValue("Alice, Bob");
+  await page.getByRole("button",{name:"Create Draft",exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/boards\/[^/]+\/edit/);
+  await expect(page.getByRole("button",{name:"Save Draft",exact:true})).toBeVisible();
+  const editUrl=page.url();
+  const key=editUrl.match(/boards\/([^/]+)\/edit/)![1];
+  const invalidMutation=await page.evaluate(async({key})=>{
+    const r=await fetch(`/api/admin/boards/${key}/`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:"null"});return r.status;
+  },{key});expect(invalidMutation).toBe(400);
+  await publicPage.goto(`/boards/${slug}/`);await expect(publicPage.getByRole("heading",{name:"This page is not in the archive."})).toBeVisible();
+  await page.getByLabel("Upload method").selectOption("import");
+  await page.getByLabel("Or upload project ZIP / project documents",{exact:true}).setInputFiles([
+    {name:"Test.PrjPcb",mimeType:"text/plain",buffer:Buffer.from("[Document1]\nDocumentPath=Main.SchDoc\n[Document2]\nDocumentPath=Main.PcbDoc")},
+    ...["Main.SchDoc","Main.PcbDoc"].map(name=>({name,mimeType:"application/octet-stream",buffer:Buffer.from("d0cf11e0a1b11ae1","hex")})),
+  ]);
+  await page.getByRole("button",{name:"Upload and inspect project",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Files uploaded");
+  await expect(page.getByText(/ALTIUM_WORKER_NOT_CONFIGURED/)).toBeVisible();
+  await expect(page.getByText("Generated outputs: 0",{exact:true})).toBeVisible();
+  const sourceUrl=await page.getByRole("link",{name:"Main.PcbDoc",exact:true}).getAttribute("href");
+  expect((await visitor.request.get(sourceUrl!)).status()).toBe(404);
+  await page.getByLabel("Upload method").selectOption("manual");
+  await page.getByLabel("Asset section").selectOption("download");
+  await page.getByLabel("Select files",{exact:true}).setInputFiles({name:"notes.txt",mimeType:"text/plain",buffer:Buffer.from("Browser test documentation")});
+  await page.getByRole("button",{name:"Upload to draft",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Files uploaded");
+  const fileUrl=await page.getByRole("link",{name:"notes.txt",exact:true}).getAttribute("href");
+  expect((await visitor.request.get(fileUrl!)).status()).toBe(404);
+  await page.getByRole("button",{name:"Publish",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Published.");
+  await publicPage.goto(`/boards/${slug}/`);await expect(publicPage.getByRole("heading",{name:"Browser workflow board",exact:true})).toBeVisible();
+  expect((await visitor.request.get(fileUrl!)).status()).toBe(200);
+  expect((await visitor.request.get(sourceUrl!)).status()).toBe(404);
+  await page.getByLabel("PCB name",{exact:true}).fill("Private edited name");
+  await page.getByRole("button",{name:"Save Draft",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  await publicPage.reload();await expect(publicPage.getByRole("heading",{name:"Browser workflow board",exact:true})).toBeVisible();
+  await page.getByRole("button",{name:"Publish",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Published.");
+  await publicPage.reload();await expect(publicPage.getByRole("heading",{name:"Private edited name",exact:true})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Private edited name",exact:true})).toBeVisible();
+  await expect(page.locator(".page-heading .lead")).toContainText("published");
+  await page.screenshot({path:testInfo.outputPath("admin-editor.png"),fullPage:true});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.getByRole("button",{name:"Archive",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Archived.");
+  expect((await visitor.request.get(fileUrl!)).status()).toBe(404);
+  await publicPage.reload();await expect(publicPage.getByRole("heading",{name:"This page is not in the archive."})).toBeVisible();
+  await page.getByRole("button",{name:"Restore as Draft",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Restored as a private draft");
+  expect((await visitor.request.get(fileUrl!)).status()).toBe(404);
+  await page.goto(editUrl);await expect(page.getByLabel("PCB name",{exact:true})).toHaveValue("Private edited name");
+  await page.getByText("Technical specifications, captions, credits, and advanced metadata",{exact:true}).click();
+  await page.getByLabel("Board metadata JSON").fill(JSON.stringify({id,slug,title:"Invalid advanced data",designer:"wrong type"}));
+  await page.getByRole("button",{name:"Apply metadata",exact:true}).click();
+  await expect(page.getByRole("alert").first()).toBeVisible();
+  await expect(page.getByLabel("PCB name",{exact:true})).toHaveValue("Private edited name");
+  await page.getByRole("button",{name:"Archive",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Archived.");
+  await page.getByRole("button",{name:"Permanently delete",exact:true}).click();
+  const dialog=page.getByRole("dialog");await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button",{name:"Delete permanently",exact:true})).toBeDisabled();
+  await dialog.getByLabel(`Type ${id} to confirm`).fill(id);
+  await dialog.getByRole("button",{name:"Delete permanently",exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/archive/);
+  expect((await visitor.request.get(fileUrl!)).status()).toBe(404);
+  await page.getByRole("button",{name:"Sign out",exact:true}).click();await expect(page).toHaveURL(/\/admin\/login/);
+  await visitor.close();
+});

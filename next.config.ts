@@ -6,10 +6,13 @@ if (basePath && !/^\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/.test(basePath)) {
 }
 
 const config: NextConfig = {
-  output: "export",
   trailingSlash: true,
   basePath,
   images: { unoptimized: true },
+  async rewrites() {
+    // Before public-file resolution: legacy /pcb URLs cannot bypass access checks.
+    return { beforeFiles: [{ source: "/pcb/:path*", destination: "/api/media/:path*" }], afterFiles: [], fallback: [] };
+  },
 };
 
 export default config;
