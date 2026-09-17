@@ -5,16 +5,17 @@ import { randomUUID, createHash } from "node:crypto";
 import { boardSchema } from "../validation";
 import type { Board } from "../../types/board";
 import { LocalAssetStorage, dataDirectory, type AssetStorage } from "./storage";
+import { publishedPreviews } from "./previews";
 
-export type AssetRole = "source" | "thumbnail" | "schematic" | "schematic-pdf" | "layout" | "model" | "render" | "photo" | "download";
+export type AssetRole = "source" | "thumbnail" | "schematic" | "schematic-pdf" | "layout" | "layout-pdf" | "model" | "render" | "photo" | "download";
 export type Asset = { id: string; boardKey: string; url: string; storageKey: string; name: string; mime: string; size: number; sha256: string; role: AssetRole; origin: "manual" | "generated" | "migration"; superseded?: boolean };
 export type ImportReport = { id: string; state: "uploaded" | "validating" | "processing" | "ready-for-review" | "processing-failed"; projects: string[]; documents: { name: string; found: boolean }[]; models: string[]; errors: string[]; generated: string[]; updatedAt: string };
-export type ManagedBoard = { key: string; board: Board; published: Board | null; publicationState: "draft" | "published" | "archived"; version: number; createdAt: string; updatedAt: string; publishedAt: string | null; archivedAt: string | null; deleting: boolean; job: ImportReport | null };
+export type ManagedBoard = { key: string; board: Board; published: Board | null; publicationState: "draft" | "published" | "archived"; version: number; createdAt: string; updatedAt: string; publishedAt: string | null; archivedAt: string | null; deleting: boolean; job: ImportReport | null; schematicPdfCandidates?: string[] };
 export type UploadAsset = { name: string; mime: string; data: Buffer; role: AssetRole; origin?: Asset["origin"]; url?: string };
 export class ManagementError extends Error { constructor(message: string, public status = 400) { super(message); } }
 
 export function boardAssetPaths(board: Board): string[] {
-  return [board.thumbnail, board.schematic?.pdf, ...(board.schematic?.images || []), ...(board.layout || []).map(a => a.src), board.model3d?.model, board.model3d?.preview, ...(board.model3d?.renders || []), ...(board.photos || []).map(a => a.src), ...(board.downloads || []).map(a => a.file)].filter((p): p is string => Boolean(p));
+  return [board.thumbnail, board.schematic?.pdf, ...(board.schematic?.images || []), ...(board.layout || []).map(a => a.src), ...(board.layoutPdfs || []).map(a => a.file), board.model3d?.model, board.model3d?.preview, ...(board.model3d?.renders || []), ...(board.photos || []).map(a => a.src), ...(board.downloads || []).map(a => a.file)].filter((p): p is string => Boolean(p));
 }
 
 export class BoardRepository {
@@ -92,6 +93,12 @@ export class BoardRepository {
       if (r.publicationState === "archived") throw new ManagementError("Restore an archived board before editing");
       if (board.id !== r.board.id || board.slug !== r.board.slug) throw new ManagementError("PCB ID and slug cannot be changed after creation");
       this.validateAssets(board, key);
+      if (board.schematic?.pdf !== r.board.schematic?.pdf) {
+        r.schematicPdfCandidates = board.schematic?.pdf ? [board.schematic.pdf] : (r.schematicPdfCandidates || []).filter(url=>url!==r.board.schematic?.pdf);
+        const generated = r.schematicPdfCandidates.filter(url=>this.asset(url)?.origin==="generated");
+        const fallback = (generated.length ? generated : r.schematicPdfCandidates).at(-1);
+        if (fallback) board.schematic = {...board.schematic,pdf:fallback};
+      }
       r.board = preserveDates ? board : { ...board, createdAt: r.board.createdAt, updatedAt: new Date().toISOString().slice(0,10) };
     });
   }
@@ -99,7 +106,7 @@ export class BoardRepository {
     return this.mutate(key, version, actor, "publish", r => {
       if (r.publicationState === "archived") throw new ManagementError("Restore an archived board before publishing");
       this.validateAssets(r.board, key);
-      r.published = this.parse(r.board);
+      r.published = publishedPreviews(this.parse(r.board), this.assets(key));
       r.publicationState = "published";
       r.publishedAt = new Date().toISOString();
     });
@@ -126,33 +133,42 @@ export class BoardRepository {
       this.audit(actor, "permanent-delete", key);
     })();
   }
-  addAssets(key: string, version: number, files: UploadAsset[], replace: boolean, actor: string) {
+  addAssets(key: string, version: number, files: UploadAsset[], replace: boolean, actor: string, sourceKind?: "schematic" | "layout") {
     const written: string[] = [];
     try {
       return this.mutate(key, version, actor, "upload", r => {
         if (r.publicationState === "archived") throw new ManagementError("Restore an archived board before uploading");
-        const replaced = new Set<AssetRole>();
+        const replaced = new Set<string>();
         for (const file of files) {
           const id = randomUUID();
           const extension = file.name.split(".").pop()!.toLowerCase();
           const group = file.role === "source" ? "source" : file.role === "photo" ? "photos" : file.role === "download" ? "downloads" : `generated/${["model","render"].includes(file.role) ? "3d" : file.role.startsWith("schematic") ? "schematic" : "layout"}`;
           const storageKey = `${key}/${group}/${id}.${extension}`;
           const asset: Asset = { id, boardKey: key, storageKey, url: file.url || `/pcb/${key}/${id}.${extension}`, name: file.name, mime: file.mime, size: file.data.length, sha256: createHash("sha256").update(file.data).digest("hex"), role: file.role, origin: file.origin || "manual" };
+          if (sourceKind && (file.role !== "source" || extension !== (sourceKind === "schematic" ? "schdoc" : "pcbdoc"))) throw new ManagementError("Source format does not match its section");
+          const selection = `${file.role}:${asset.origin}`;
           this.storage.put(storageKey, file.data); written.push(storageKey);
           if (file.role === "source") {
-            for (const previous of this.assets(key).filter(a => a.role === "source" && !a.superseded && ((replace && !replaced.has("source")) || a.name.toLowerCase() === file.name.toLowerCase()))) {
+            for (const previous of this.assets(key).filter(a => a.role === "source" && !a.superseded && ((replace && !replaced.has(selection) && (!sourceKind || a.name.toLowerCase().endsWith(sourceKind === "schematic" ? ".schdoc" : ".pcbdoc"))) || a.name.toLowerCase() === file.name.toLowerCase()))) {
               this.db.prepare("UPDATE assets SET record = ? WHERE id = ?").run(JSON.stringify({...previous,superseded:true}),previous.id);
             }
           }
           this.db.prepare("INSERT INTO assets VALUES (?,?,?,?)").run(id, key, asset.url, JSON.stringify(asset));
-          const clear = replace && !replaced.has(file.role); replaced.add(file.role);
+          const clear = replace && !replaced.has(selection); replaced.add(selection);
+          // Replacing a manual selection must not discard generated candidates.
+          const keep = (url:string) => !clear || (this.asset(url)?.origin === "generated") !== (asset.origin === "generated");
           const b = r.board;
           if (file.role === "thumbnail") b.thumbnail = asset.url;
-          if (file.role === "schematic") b.schematic = { ...b.schematic, images: [...(clear ? [] : b.schematic?.images || []), asset.url] };
-          if (file.role === "schematic-pdf") b.schematic = { ...b.schematic, pdf: asset.url };
-          if (file.role === "layout") b.layout = [...(clear ? [] : b.layout || []), {src:asset.url,caption:file.name}];
+          if (file.role === "schematic") b.schematic = { ...b.schematic, images: [...(b.schematic?.images || []).filter(keep), asset.url] };
+          if (file.role === "schematic-pdf") {
+            r.schematicPdfCandidates = [...(r.schematicPdfCandidates || (b.schematic?.pdf ? [b.schematic.pdf] : [])).filter(keep), asset.url];
+            const generated = r.schematicPdfCandidates.filter(url=>this.asset(url)?.origin==="generated");
+            b.schematic = { ...b.schematic, pdf: (generated.length ? generated : r.schematicPdfCandidates).at(-1) };
+          }
+          if (file.role === "layout") b.layout = [...(b.layout || []).filter(a=>keep(a.src)), {src:asset.url,caption:file.name}];
+          if (file.role === "layout-pdf") b.layoutPdfs = [...(b.layoutPdfs || []).filter(a=>keep(a.file)), {file:asset.url,label:file.name}];
           if (file.role === "model") b.model3d = { ...b.model3d, model: asset.url };
-          if (file.role === "render") b.model3d = { ...b.model3d, renders: [...(clear ? [] : b.model3d?.renders || []), asset.url] };
+          if (file.role === "render") b.model3d = { ...b.model3d, renders: [...(b.model3d?.renders || []).filter(keep), asset.url] };
           if (file.role === "photo") b.photos = [...(clear ? [] : b.photos || []), {src:asset.url,caption:file.name}];
           if (file.role === "download") b.downloads = [...(clear ? [] : b.downloads || []), {file:asset.url,label:file.name}];
         }

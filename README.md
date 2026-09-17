@@ -55,14 +55,20 @@ Admin pages and every administrative API authorize on the server. Origin checks 
 
 ## Management workflow
 
-- `/admin/boards`: manage drafts and published boards; choose **Import Altium Project** or **Manual Upload**.
-- `/admin/boards/new`: enter identity and metadata, then create a private draft.
+Use **Sign In** in the normal PCB Library navigation. The dialog preserves your current public page and filters. After login, **Upload PCB** and the account menu provide access to management and archived boards. Public browsing remains available without login. `/admin/login` remains a fallback, and all management pages share the public navigation and design system.
+
+- `/admin/boards`: manage drafts and published boards; choose **Upload PCB**.
+- `/admin/boards/new`: enter metadata and select files in four primary sections, then **Save Draft** or **Publish**.
 - `/admin/boards/<internal-key>/edit`: edit metadata, upload files, inspect imports, preview technical media, save drafts, publish, or archive.
 - `/admin/archive`: review archived boards; Admin can restore to Draft or permanently delete.
 
 PCB ID and slug are fixed after creation to preserve public URLs. The route uses an immutable internal UUID. Engineering status (`design`, `tested`, etc.) is separate from publication state (`draft`, `published`, `archived`). Concurrent stale edits are rejected instead of overwriting newer changes.
 
 Editing a published board saves a private working copy. **Publish** atomically replaces its public metadata/asset selection. **Archive** immediately blocks new public requests to the board and its files; it does not erase files or copies visitors already downloaded. **Restore** returns the board to a private Draft.
+
+The four primary upload sections are **Schematic** (.SchDoc source with optional PDF/images), **PCB Layout** (.PcbDoc source with optional images/PDFs), **3D Render** (multiple static images), and **Physical Photos** (multiple images with optional captions). Images accept PNG, JPG/JPEG and WebP. Layout/photo captions can be edited directly. Source files are private and never embedded as images. Without a preview, a published source-only section says “Preview not generated yet”; an empty section says “Preview not available”. Authorized users can access source links and **Edit PCB** from published detail pages.
+
+Files may be selected before the first save. Saving creates a private record, uploads pending groups, and saves captions. If an upload fails, successful groups stay in the draft and pending groups can be retried. Publication happens only after the pending work succeeds. **Advanced options** retains project folder/ZIP import, thumbnails, downloads, existing interactive GLB/GLTF models, and advanced metadata.
 
 Permanent deletion is limited to archived records and requires a dialog plus the exact PCB ID. It removes active metadata and associated files, while retaining a minimal audit event. Failed file cleanup leaves a private deletion-pending record that can be retried. Backups follow the operator's separate retention policy.
 
@@ -74,7 +80,9 @@ Choose a project folder or ZIP to upload source documents with their relative pa
 
 **Actual Altium output generation is not connected.** The separate `AltiumProcessor` interface in `src/lib/admin/processor.ts` returns an explicit `ALTIUM_WORKER_NOT_CONFIGURED` processing failure through its default adapter. Reports persist with the board, and **Recheck project** retries inspection. No scheduler or remote worker credentials are enabled. Implementing the Windows worker, job leasing/dispatch, version-safe output ingestion, and real Altium scripts/OutputJobs is a separate integration task. There are no fake renders or success indicators.
 
-You can independently upload exported schematic images/PDF, layout images, GLB/GLTF models, 3D renders, physical photos, and downloads, then publish after review. Manual updates are never overwritten by the unavailable processor. **Replace current section selection** changes the draft's selected assets while retaining historical files privately. Source uploads replace same-path source entries in the active manifest; the checkbox replaces the active source set.
+Selected generated previews take priority over selected manual previews, separately for schematic images/PDF, layout images/PDFs, and 3D renders. Migrated previews remain valid fallbacks. Manual replacements preserve generated candidates; historical unselected files are never automatically restored. The chosen result is frozen in the published snapshot until the next explicit publish. Manual fallback schematic PDFs are retained in private draft metadata. This priority rule does not imply that a worker is configured.
+
+**Replace current section selection** changes the draft selection while retaining historical files privately. Replacing primary schematic sources affects only .SchDoc files; replacing primary PCB sources affects only .PcbDoc files. Advanced project import may replace the entire source manifest. Existing interactive models remain supported, but the primary **3D Render** field accepts static images only.
 
 Limits: 64 MiB per file, 128 MiB per request, 256 MiB total expanded content, 300 archive entries/files, and an 8 MiB project-manifest inspection limit. Nested/encrypted archives, unsafe paths, archive links, duplicate paths and excessive compression ratios are rejected. Content signatures and MIME values are checked where supported. This is format validation, not full EDA validation or malware scanning. Uploaded scripts/executables are rejected and never executed.
 
@@ -118,6 +126,8 @@ Existing public routes, browser search/filter/sort, gallery interactions, and la
 | `npm run test:e2e` | Public/admin desktop and mobile tests against an isolated production server |
 
 Migration is additive and idempotent for completed records. It never overwrites existing runtime identities. Keep original JSON as migration fixtures, not a second live editing system. Review any conflict rather than deleting runtime records to force a migration.
+
+The unified-interface/upload refinement needs **no database migration command** for an existing installation. SQLite tables and asset paths are unchanged. Optional JSON fields (`layoutPdfs`, server-derived published `sourceAvailability`, and private `schematicPdfCandidates`) are added only when used; old records remain readable without rewriting them. Source availability is captured at publication, so private source uploads cannot change public text before publishing. Use `npm run db:migrate` only to import legacy seed records on initial setup, and `npm run validate:runtime` to verify an existing library. No environment variables were added for this refinement.
 
 Browser tests require `npm run build` and Chrome/Chromium. Run `npx playwright install chromium`, or in PowerShell set `$env:PLAYWRIGHT_CHANNEL='chrome'` for installed Chrome. Tests provision their own temporary database, credentials and assets; they do not modify the real runtime library. The mobile project uses a Chromium viewport, not Safari certification.
 

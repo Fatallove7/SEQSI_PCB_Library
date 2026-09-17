@@ -22,6 +22,8 @@ export async function POST(request: Request, {params}: {params:Promise<{key:stri
       const version = Number(form.get("version"));
       if(!Number.isSafeInteger(version)||version<1) throw new HttpError(400,"Invalid board version");
       const role = action === "import" ? "source" : String(form.get("role")) as AssetRole;
+      const sourceKind = form.get("sourceKind");
+      if (sourceKind !== null && (action !== "upload" || role !== "source" || (sourceKind !== "schematic" && sourceKind !== "layout"))) throw new HttpError(400,"Invalid source section");
       const files = form.getAll("files");
       const names = form.getAll("paths");
       const incoming = await Promise.all(files.map(async (file,index) => {
@@ -29,7 +31,7 @@ export async function POST(request: Request, {params}: {params:Promise<{key:stri
         return {name:String(names[index] || file.name),mime:file.type,data:Buffer.from(await file.arrayBuffer())};
       }));
       const prepared = await prepareUploads(incoming,role,action === "import");
-      let record = repo.addAssets(key,version,prepared,form.get("replace") === "true",user.username);
+      let record = repo.addAssets(key,version,prepared,form.get("replace") === "true",user.username,sourceKind || undefined);
       if (action === "import") record = await inspectProject(repo,key,record.version,user.username);
       return Response.json(record);
     }

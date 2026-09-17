@@ -1,6 +1,6 @@
 # Adding a PCB to the library
 
-The live archive is managed through `/admin`. Sign in, choose **Manual Upload** or **Import Altium Project**, create a draft, upload the available files, review the preview, and explicitly **Publish**. Metadata and assets persist without rebuilding. Visitors continue to browse anonymously.
+Use **Sign In** in the PCB Library navigation, then **Upload PCB**. Enter basic information and choose files in **Schematic**, **PCB Layout**, **3D Render**, and **Physical Photos**. Schematic/PCB sources are private .SchDoc/.PcbDoc files; their image/PDF previews are optional. Add layout/photo captions, **Save Draft**, review, then **Publish**. Project folder/ZIP imports and other file types remain under **Advanced options**. Metadata and assets persist without rebuilding. Visitors continue to browse anonymously.
 
 Use **Save Draft** for edits that must remain private. **Archive** hides a board and its assets; Admin can restore it to Draft. Permanent deletion is a separate Admin-only action with typed PCB-ID confirmation. See [README.md](../README.md) for setup, supported uploads, limits, and the separate Altium-worker integration task.
 

@@ -28,3 +28,19 @@
 .admin-area details > summary { cursor: pointer; font-weight: var(--weight-medium); margin-bottom: var(--space-4); }
 .admin-area .technical-json { font-family: var(--font-technical); font-size: var(--type-meta); min-height: 180px; }
 @media(max-width:640px) { .admin-columns, .admin-assets { grid-template-columns: 1fr; } .admin-table th, .admin-table td { padding: var(--space-3); } }
+.admin-upload-sections { display: grid; gap: var(--space-6); }
+.admin-upload-section { min-width: 0; padding: var(--space-6); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.admin-upload-heading { display: flex; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-5); }
+.admin-upload-heading h2 { margin-bottom: var(--space-2); }
+.admin-step { color: var(--text-muted); font-family: var(--font-technical); font-size: var(--type-meta); padding-top: var(--space-2); }
+.admin-upload-field + .admin-upload-field { margin-top: var(--space-5); }
+.admin-upload-field input[type="file"] { padding: var(--space-3); background: var(--background-secondary); width: 100%; min-width: 0; }
+.admin-upload-files { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
+.admin-upload-file { display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-4); background: var(--background-secondary); border-radius: var(--radius-control); overflow-wrap: anywhere; min-width: 0; }
+.admin-upload-file > img { width: 100px; height: 80px; object-fit: contain; flex-shrink: 0; }
+.admin-upload-file > div { min-width: 0; flex: 1; }
+.admin-upload-file p { font-size: var(--type-small); margin-block: var(--space-2); }
+.admin-upload-file label { margin-block: var(--space-3); }
+.admin-save-actions { margin-bottom: 0; }
+.admin-advanced { margin-top: var(--space-8); padding-top: var(--space-5); border-top: 1px solid var(--border); }
+@media(max-width:640px) { .admin-upload-section { padding: var(--space-4); } .admin-upload-file { flex-direction: column; } }

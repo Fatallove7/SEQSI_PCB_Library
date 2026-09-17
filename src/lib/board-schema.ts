@@ -45,6 +45,8 @@ export const boardSchema = z.object({
   specifications: z.record(z.string(), z.union([text, z.number()])).optional(),
   schematic: z.object({ images: z.array(imagePath).optional(), pdf: assetPath(["pdf"]).optional() }).optional(),
   layout: z.array(image).optional(),
+  layoutPdfs: z.array(z.object({ file: assetPath(["pdf"]), label: text.optional() })).optional(),
+  sourceAvailability: z.object({ schematic: z.boolean(), layout: z.boolean() }).optional(),
   model3d: z.object({
     model: assetPath(["glb", "gltf"]).optional(),
     preview: imagePath.optional(),
@@ -57,4 +59,3 @@ export const boardSchema = z.object({
   updatedAt: date.optional(),
   demo: z.boolean().optional(),
 });
-

@@ -12,6 +12,7 @@ function referencedAssets(board: Board): { field: string; file: string }[] {
   add("schematic.pdf", board.schematic?.pdf);
   board.schematic?.images?.forEach((file, index) => add(`schematic.images.${index}`, file));
   board.layout?.forEach((item, index) => add(`layout.${index}.src`, item.src));
+  board.layoutPdfs?.forEach((item, index) => add(`layoutPdfs.${index}.file`, item.file));
   add("model3d.model", board.model3d?.model);
   add("model3d.preview", board.model3d?.preview);
   board.model3d?.renders?.forEach((file, index) => add(`model3d.renders.${index}`, file));

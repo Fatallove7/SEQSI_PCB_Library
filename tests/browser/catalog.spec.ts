@@ -65,7 +65,8 @@ test("detail galleries, keyboard focus, missing media, and 404", async ({ page }
   await expect(page.getByRole("button", { name: "Load interactive 3D model" })).toHaveCount(0);
   await expect(page.locator("#model img")).toBeVisible();
   await page.goto("/boards/demo-c-partial/");
-  for (const section of ["schematic", "layout", "model", "photos", "downloads"]) await expect(page.locator(`#${section}`)).toContainText("Not available yet.");
+  for (const section of ["schematic", "layout", "model"]) await expect(page.locator(`#${section}`)).toContainText("Preview not available");
+  for (const section of ["photos", "downloads"]) await expect(page.locator(`#${section}`)).toContainText("Not available yet.");
   const missing = await page.goto("/boards/no-such-board/");
   expect(missing?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "This page is not in the archive." })).toBeVisible();

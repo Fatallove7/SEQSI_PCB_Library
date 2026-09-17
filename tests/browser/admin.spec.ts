@@ -18,14 +18,14 @@ test("administrator can upload, publish, edit privately, archive, restore and de
   await page.getByLabel("Password",{exact:true}).fill("Browser-test-password-2026");
   await page.getByRole("button",{name:"Sign in",exact:true}).click();
   await expect(page).toHaveURL(/\/admin\/boards/);
-  await page.getByRole("link",{name:"+ Manual Upload",exact:true}).click();
+  await page.getByRole("main").getByRole("link",{name:"+ Upload PCB",exact:true}).click();
   await page.getByLabel("PCB ID",{exact:true}).fill(id);
   await page.getByLabel("URL slug",{exact:true}).fill(slug);
   await page.getByLabel("PCB name",{exact:true}).fill("Browser workflow board");
   await page.getByLabel("Description",{exact:true}).fill("Test record only; no technical data.");
   await page.getByLabel("Designer(s), comma-separated").pressSequentially("Alice, Bob");
   await expect(page.getByLabel("Designer(s), comma-separated")).toHaveValue("Alice, Bob");
-  await page.getByRole("button",{name:"Create Draft",exact:true}).click();
+  await page.getByRole("button",{name:"Save Draft",exact:true}).click();
   await expect(page).toHaveURL(/\/admin\/boards\/[^/]+\/edit/);
   await expect(page.getByRole("button",{name:"Save Draft",exact:true})).toBeVisible();
   const editUrl=page.url();
@@ -34,6 +34,7 @@ test("administrator can upload, publish, edit privately, archive, restore and de
     const r=await fetch(`/api/admin/boards/${key}/`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:"null"});return r.status;
   },{key});expect(invalidMutation).toBe(400);
   await publicPage.goto(`/boards/${slug}/`);await expect(publicPage.getByRole("heading",{name:"This page is not in the archive."})).toBeVisible();
+  await page.getByText("Advanced options",{exact:true}).click();
   await page.getByLabel("Upload method").selectOption("import");
   await page.getByLabel("Or upload project ZIP / project documents",{exact:true}).setInputFiles([
     {name:"Test.PrjPcb",mimeType:"text/plain",buffer:Buffer.from("[Document1]\nDocumentPath=Main.SchDoc\n[Document2]\nDocumentPath=Main.PcbDoc")},
@@ -43,7 +44,7 @@ test("administrator can upload, publish, edit privately, archive, restore and de
   await expect(page.getByRole("status")).toContainText("Files uploaded");
   await expect(page.getByText(/ALTIUM_WORKER_NOT_CONFIGURED/)).toBeVisible();
   await expect(page.getByText("Generated outputs: 0",{exact:true})).toBeVisible();
-  const sourceUrl=await page.getByRole("link",{name:"Main.PcbDoc",exact:true}).getAttribute("href");
+  const sourceUrl=await page.getByRole("link",{name:"Main.PcbDoc",exact:true}).first().getAttribute("href");
   expect((await visitor.request.get(sourceUrl!)).status()).toBe(404);
   await page.getByLabel("Upload method").selectOption("manual");
   await page.getByLabel("Asset section").selectOption("download");
@@ -76,6 +77,7 @@ test("administrator can upload, publish, edit privately, archive, restore and de
   await expect(page.getByRole("status")).toContainText("Restored as a private draft");
   expect((await visitor.request.get(fileUrl!)).status()).toBe(404);
   await page.goto(editUrl);await expect(page.getByLabel("PCB name",{exact:true})).toHaveValue("Private edited name");
+  await page.getByText("Advanced options",{exact:true}).click();
   await page.getByText("Technical specifications, captions, credits, and advanced metadata",{exact:true}).click();
   await page.getByLabel("Board metadata JSON").fill(JSON.stringify({id,slug,title:"Invalid advanced data",designer:"wrong type"}));
   await page.getByRole("button",{name:"Apply metadata",exact:true}).click();
@@ -90,6 +92,80 @@ test("administrator can upload, publish, edit privately, archive, restore and de
   await dialog.getByRole("button",{name:"Delete permanently",exact:true}).click();
   await expect(page).toHaveURL(/\/admin\/archive/);
   expect((await visitor.request.get(fileUrl!)).status()).toBe(404);
-  await page.getByRole("button",{name:"Sign out",exact:true}).click();await expect(page).toHaveURL(/\/admin\/login/);
+  await page.getByRole("button",{name:"browser-test-admin",exact:true}).click();
+  await page.getByRole("button",{name:"Sign Out",exact:true}).click();await expect(page).toHaveURL(/\/boards/);
+  await visitor.close();
+});
+
+test("four-section upload keeps failed selections and publishes only after retry",async({page,browser},testInfo)=>{
+  const id=`UPLOAD-${randomUUID().slice(0,8)}`;
+  await page.goto("/admin/login/");
+  await page.getByLabel("Username",{exact:true}).fill("browser-test-admin");
+  await page.getByLabel("Password",{exact:true}).fill("Browser-test-password-2026");
+  await page.getByRole("button",{name:"Sign in",exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/boards\/?$/);
+  await page.goto("/admin/boards/new/");
+  for(const name of ["Schematic","PCB Layout","3D Render","Physical Photos"]) await expect(page.getByRole("heading",{name,exact:true})).toBeVisible();
+  await page.getByLabel("PCB ID",{exact:true}).fill(id);
+  await page.getByLabel("URL slug",{exact:true}).fill(id.toLowerCase());
+  await page.getByLabel("PCB name",{exact:true}).fill("Four-section upload");
+  await page.getByLabel("Description",{exact:true}).fill("Manual documentation workflow.");
+  const image=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=","base64");
+  const source={mimeType:"application/octet-stream",buffer:Buffer.from("d0cf11e0a1b11ae1","hex")};
+  await page.getByLabel("Schematic source files (.SchDoc)",{exact:true}).setInputFiles({name:"Circuit.SchDoc",...source});
+  await page.getByLabel("PCB layout source files (.PcbDoc)",{exact:true}).setInputFiles({name:"Board.PcbDoc",...source});
+  await page.getByLabel("3D render images",{exact:true}).setInputFiles({name:"render.png",mimeType:"image/png",buffer:image});
+  await page.getByLabel("Physical photo images",{exact:true}).setInputFiles({name:"assembled.png",mimeType:"image/png",buffer:image});
+  await page.getByLabel("Caption for assembled.png",{exact:true}).fill("Assembled board, top view");
+  await page.screenshot({path:testInfo.outputPath("four-section-upload.png"),fullPage:true});
+  let failed=false;
+  await page.route("**/api/admin/boards/*/upload",async route=>{
+    if(!failed && route.request().postDataBuffer()?.includes(Buffer.from("Board.PcbDoc"))) {failed=true;await route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({error:"Upload interrupted; retry."})});}
+    else await route.continue();
+  });
+  await page.getByRole("button",{name:"Publish",exact:true}).click();
+  await expect(page.locator("main").getByRole("alert")).toContainText("Upload interrupted");
+  await expect(page).toHaveURL(/\/admin\/boards\/[^/]+\/edit/);
+  await expect(page.getByText("Board.PcbDoc",{exact:true}).first()).toBeVisible();
+  await expect(page.getByLabel("Caption for assembled.png",{exact:true})).toHaveValue("Assembled board, top view");
+  const key=page.url().match(/boards\/([^/]+)\/edit/)![1];
+  const visitor=await browser.newContext();
+  expect((await visitor.request.get(`/boards/${id.toLowerCase()}/`)).status()).toBe(404);
+  await page.getByRole("button",{name:"Save Draft",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Draft saved");
+  const draft=await page.evaluate(async key=>(await (await fetch(`/api/admin/boards/${key}/`)).json()),key);
+  expect(draft.assets.filter((asset:{name:string})=>asset.name==="Circuit.SchDoc")).toHaveLength(1);
+  expect(draft.record.board.photos[0].caption).toBe("Assembled board, top view");
+
+  await page.getByRole("button",{name:"Publish",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Published.");
+  const published=await page.evaluate(async key=>(await (await fetch(`/api/admin/boards/${key}/`)).json()),key);
+  expect(published.record.published.sourceAvailability).toEqual({schematic:true,layout:true});
+  const publicPage=await visitor.newPage();
+  await publicPage.goto(`/boards/${id.toLowerCase()}/`);
+  await expect(publicPage.locator("#schematic")).toContainText("Preview not generated yet");
+  await expect(publicPage.locator("#layout")).toContainText("Preview not generated yet");
+  await expect(publicPage.locator('img[src$=".SchDoc"],img[src$=".PcbDoc"],iframe[src$=".SchDoc"],iframe[src$=".PcbDoc"]')).toHaveCount(0);
+  await expect(publicPage.locator("#model img")).toHaveCount(1);
+  await expect(publicPage.getByRole("button",{name:"Load interactive 3D model"})).toHaveCount(0);
+  await expect(publicPage.locator("#photos")).toContainText("Assembled board, top view");
+  await page.getByLabel("PCB layout PDFs",{exact:true}).setInputFiles({name:"layout.pdf",mimeType:"application/pdf",buffer:Buffer.from("%PDF-1.4\n%%EOF")});
+  await page.getByLabel("Schematic PDF",{exact:true}).setInputFiles({name:"schematic.pdf",mimeType:"application/pdf",buffer:Buffer.from("%PDF-1.4\n%%EOF")});
+  await page.getByRole("button",{name:"Publish",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Published.");
+  await publicPage.reload();
+  const layoutPdf=publicPage.locator("#layout").getByRole("link",{name:/layout.pdf/});
+  await expect(layoutPdf).toBeVisible();
+  expect((await visitor.request.get((await layoutPdf.getAttribute("href"))!)).status()).toBe(200);
+  await expect(publicPage.locator("#schematic").getByRole("link",{name:/Open PDF/})).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading",{name:"Four-section upload",exact:true})).toBeVisible();
+  await expect(page.getByLabel("Caption for assembled.png",{exact:true})).toHaveValue("Assembled board, top view");
+  await page.getByRole("button",{name:"Archive",exact:true}).click();
+  await expect(page.getByRole("status")).toContainText("Archived.");
+  await page.getByRole("button",{name:"Permanently delete",exact:true}).click();
+  await page.getByRole("dialog").getByLabel(`Type ${id} to confirm`).fill(id);
+  await page.getByRole("button",{name:"Delete permanently",exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/archive/);
   await visitor.close();
 });
