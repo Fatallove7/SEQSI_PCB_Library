@@ -17,7 +17,7 @@ try {
     // Files have already passed the legacy realpath and schema validator.
     const paths = [...new Set(boardAssetPaths(original))];
     const files = paths.map(url=>({name:url.slice(5),mime:mime[url.split(".").pop()!.toLowerCase()]||"application/octet-stream",data:readFileSync(path.join(process.cwd(),"public",url.slice(1))),role:"source" as const,origin:"migration" as const,url:repo.asset(url) ? undefined : url}));
-    const metadata = {...original,thumbnail:undefined,schematic:undefined,layout:undefined,model3d:undefined,photos:undefined,downloads:undefined};
+    const metadata = {...original,thumbnail:undefined,schematic:undefined,layout:undefined,layoutPdfs:undefined,model3d:undefined,photos:undefined,downloads:undefined};
     let record = repo.create(metadata,"migration",true);
     try {
       if(files.length) record=repo.addAssets(record.key,record.version,files,false,"migration");
@@ -32,5 +32,6 @@ try {
       repo.delete(record.key,archived.version,original.id,"migration"); throw e;
     }
   }
+  console.log(`Categories migration applied (${repo.categories().length} categories).`);
   console.log(`Migration complete: ${imported} imported, ${boards.length-imported} already migrated. Legacy JSON/assets were not modified.`);
 } finally {repo.close();}

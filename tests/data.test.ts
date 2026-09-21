@@ -30,7 +30,7 @@ test("rejects missing required metadata and invalid required values", () => {
   for (const change of [
     { id: " " }, { title: "" }, { description: " " }, { slug: "Upper-case" },
     { slug: "../board" }, { slug: "double--dash" }, { year: "2026" },
-    { year: 2026.5 }, { year: 1899 }, { year: 10000 }, { category: "unknown" },
+    { year: 2026.5 }, { year: 1899 }, { year: 10000 }, { category: " " },
   ]) assert.equal(boardSchema.safeParse({ ...partial, ...change }).success, false, JSON.stringify(change));
 });
 

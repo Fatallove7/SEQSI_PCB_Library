@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { boardCategories } from "../data/categories";
 
 const text = z.string().trim().min(1, "Must not be empty");
 const date = z.string().refine((value) => {
@@ -21,6 +20,7 @@ function assetPath(extensions?: string[]) {
 }
 
 const imagePath = assetPath(imageExtensions);
+const renderPath = assetPath([...imageExtensions, "pdf"]);
 const image = z.object({
   src: imagePath,
   caption: text.optional(),
@@ -35,7 +35,7 @@ export const boardSchema = z.object({
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and single hyphens"),
   title: text,
   year: z.number().int().min(1900).max(9999),
-  category: text.refine((value) => boardCategories.some((category) => category.id === value), "Unknown category; check src/data/categories.ts"),
+  category: text,
   description: text,
   designer: z.array(text).optional(),
   revision: text.optional(),
@@ -50,9 +50,10 @@ export const boardSchema = z.object({
   model3d: z.object({
     model: assetPath(["glb", "gltf"]).optional(),
     preview: imagePath.optional(),
-    renders: z.array(imagePath).optional(),
+    renders: z.array(renderPath).optional(),
+    primary: renderPath.optional(),
   }).optional(),
-  photos: z.array(image).optional(),
+  photos: z.array(image.extend({ src: renderPath })).optional(),
   downloads: z.array(z.object({ label: text, file: assetPath() })).optional(),
   notes: z.string().optional(),
   createdAt: date.optional(),

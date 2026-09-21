@@ -46,13 +46,13 @@ test("detail galleries, keyboard focus, missing media, and 404", async ({ page }
   }
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath("detail.png"), fullPage: true });
-  const trigger = page.getByRole("button", { name: "Enlarge Top view — layout placeholder" });
+  const trigger = page.locator("#model .gallery-trigger").first();
   await trigger.click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("1 / 2");
+  await expect(dialog).toContainText("1 / 1");
   await page.keyboard.press("ArrowRight");
-  await expect(dialog).toContainText("2 / 2");
+  await expect(dialog).toContainText("1 / 1");
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
   await expect(trigger).toBeFocused();
@@ -65,22 +65,21 @@ test("detail galleries, keyboard focus, missing media, and 404", async ({ page }
   await expect(page.getByRole("button", { name: "Load interactive 3D model" })).toHaveCount(0);
   await expect(page.locator("#model img")).toBeVisible();
   await page.goto("/boards/demo-c-partial/");
-  for (const section of ["schematic", "layout", "model"]) await expect(page.locator(`#${section}`)).toContainText("Preview not available");
-  for (const section of ["photos", "downloads"]) await expect(page.locator(`#${section}`)).toContainText("Not available yet.");
+  for (const section of ["schematic", "model", "photos"]) await expect(page.locator(`#${section}`)).toContainText("Preview not available");
+  for (const section of ["downloads"]) await expect(page.locator(`#${section}`)).toContainText("Not available yet.");
   const missing = await page.goto("/boards/no-such-board/");
   expect(missing?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "This page is not in the archive." })).toBeVisible();
 });
 
-test("model loads only on request and exposes reset controls", async ({ page }) => {
+test("legacy interactive assets remain hidden and 3D covers do not use photographs", async ({ page }) => {
   const models: string[] = [];
   page.on("request", request => { if (request.url().endsWith(".glb")) models.push(request.url()); });
   await page.goto("/boards/demo-a-complete/");
-  await expect(page.getByRole("button", { name: "Load interactive 3D model" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Load interactive 3D model" })).toHaveCount(0);
+  await expect(page.locator("#layout")).toHaveCount(0);
   expect(models).toHaveLength(0);
-  await page.getByRole("button", { name: "Load interactive 3D model" }).click();
-  await expect(page.locator("model-viewer")).toBeVisible();
-  await expect(page.locator(".model-status")).toContainText("Drag to rotate", { timeout: 30000 });
-  expect(models.length).toBeGreaterThan(0);
-  await page.getByRole("button", { name: "Reset camera" }).click();
+  await page.goto("/");
+  await expect(page.locator('.board-card[href*="demo-a-complete"] img')).toHaveAttribute("src", /\/3d\/preview.svg$/);
+  await expect(page.locator('.board-card[href*="demo-c-partial"]')).toContainText("3D preview unavailable");
 });

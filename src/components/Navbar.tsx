@@ -43,6 +43,7 @@ export function Navbar({ user, permissions }: { user: User | null; permissions: 
         <summary role="button" className="button">{user.username}<span aria-hidden="true">⌄</span></summary>
         <div className="account-menu-panel">
           {permissions.manage && <Link href="/admin/boards" onClick={() => { if (accountMenu.current) accountMenu.current.open = false; }}>Management</Link>}
+          {user.role === "admin" && <Link href="/admin/categories" onClick={() => { if (accountMenu.current) accountMenu.current.open = false; }}>Manage categories</Link>}
           {permissions.archive && <Link href="/admin/archive" onClick={() => { if (accountMenu.current) accountMenu.current.open = false; }}>Archived Boards</Link>}
           <button type="button" onClick={signOut} disabled={signingOut}>{signingOut ? "Signing out…" : "Sign Out"}</button>
           {error && <p role="alert" className="notice">{error}</p>}

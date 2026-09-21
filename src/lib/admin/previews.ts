@@ -12,12 +12,7 @@ export function publishedPreviews(board: Board, assets: Asset[]): Board {
   if (result.schematic?.images) result.schematic.images = prefer(result.schematic.images, src=>src);
   if (result.layout) result.layout = prefer(result.layout, item=>item.src);
   if (result.layoutPdfs) result.layoutPdfs = prefer(result.layoutPdfs, item=>item.file);
-  if (result.model3d) {
-    const images = [...new Set([result.model3d.preview, ...(result.model3d.renders || [])].filter((p):p is string=>Boolean(p)))];
-    const selected = prefer(images, src=>src);
-    if (result.model3d.preview && !selected.includes(result.model3d.preview)) delete result.model3d.preview;
-    if (result.model3d.renders) result.model3d.renders = result.model3d.renders.filter(src=>selected.includes(src));
-  }
+  // Every selected 3D asset participates in the new explicit-primary/image/PDF cover order.
   const sources = assets.filter(a=>a.role==="source" && !a.superseded);
   const schematic = sources.some(a=>/\.schdoc$/i.test(a.name));
   const layout = sources.some(a=>/\.pcbdoc$/i.test(a.name));

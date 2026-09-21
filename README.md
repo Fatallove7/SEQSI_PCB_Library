@@ -4,7 +4,7 @@ A public, read-only PCB catalog with a protected management area. The approved e
 
 ## Local setup
 
-Use Node.js 22.9 or newer (Node.js 24 LTS recommended).
+Use Node.js 22.13 or newer (Node.js 24 LTS recommended).
 
 ```powershell
 npm ci
@@ -47,6 +47,7 @@ An unconfigured administrator cannot sign in, but the public catalog remains ava
 | Read published catalog/media/downloads | Yes | Yes | Yes |
 | Upload, edit, publish, archive | No | Yes | Yes |
 | Restore or permanently delete | No | No | Yes |
+| Create/delete categories | No | No | Yes |
 | Manage/invite users | No | No | Admin-only permission reserved |
 
 V1 provisions **one Admin through environment configuration**. Public registration and signup APIs do not exist. The permission layer includes Editor permissions for a later invite-only account store; V1 does not expose invitation/user-management screens. Change the configured username/password hash to change the administrator. Credential changes invalidate existing sessions. Sessions last eight hours, use HttpOnly/SameSite=Strict cookies, and require secure cookies in production.
@@ -57,42 +58,47 @@ Admin pages and every administrative API authorize on the server. Origin checks 
 
 Use **Sign In** in the normal PCB Library navigation. The dialog preserves your current public page and filters. After login, **Upload PCB** and the account menu provide access to management and archived boards. Public browsing remains available without login. `/admin/login` remains a fallback, and all management pages share the public navigation and design system.
 
-- `/admin/boards`: manage drafts and published boards; choose **Upload PCB**.
-- `/admin/boards/new`: enter metadata and select files in four primary sections, then **Save Draft** or **Publish**.
-- `/admin/boards/<internal-key>/edit`: edit metadata, upload files, inspect imports, preview technical media, save drafts, publish, or archive.
+- `/admin/boards`: manage drafts and published boards; choose **Upload PCB**, **Edit / archive**, or Admin-only **Delete**.
+- `/admin/boards/new`: enter metadata and select files in three sections, then **Save Draft** or **Publish**.
+- `/admin/boards/<internal-key>/edit`: edit metadata, add/replace/remove assets, select the primary 3D cover, publish, archive, or delete.
 - `/admin/archive`: review archived boards; Admin can restore to Draft or permanently delete.
+- `/admin/categories`: Admin-only category creation/deletion, also available in the account menu.
 
-PCB ID and slug are fixed after creation to preserve public URLs. The route uses an immutable internal UUID. Engineering status (`design`, `tested`, etc.) is separate from publication state (`draft`, `published`, `archived`). Concurrent stale edits are rejected instead of overwriting newer changes.
+PCB ID and slug remain fixed after creation. Engineering status (`design`, `tested`, etc.) is separate from publication state (`draft`, `published`, `archived`). Stale edits are rejected rather than overwriting newer changes.
 
-Editing a published board saves a private working copy. **Publish** atomically replaces its public metadata/asset selection. **Archive** immediately blocks new public requests to the board and its files; it does not erase files or copies visitors already downloaded. **Restore** returns the board to a private Draft.
+Editing a published board saves a private working copy. **Publish** replaces its public metadata/asset selection. **Archive** blocks new public requests while retaining metadata and files. **Restore** returns a board to a private Draft.
 
-The four primary upload sections are **Schematic** (.SchDoc source with optional PDF/images), **PCB Layout** (.PcbDoc source with optional images/PDFs), **3D Render** (multiple static images), and **Physical Photos** (multiple images with optional captions). Images accept PNG, JPG/JPEG and WebP. Layout/photo captions can be edited directly. Source files are private and never embedded as images. Without a preview, a published source-only section says “Preview not generated yet”; an empty section says “Preview not available”. Authorized users can access source links and **Edit PCB** from published detail pages.
+## Uploads, previews, and covers
 
-Files may be selected before the first save. Saving creates a private record, uploads pending groups, and saves captions. If an upload fails, successful groups stay in the draft and pending groups can be retried. Publication happens only after the pending work succeeds. **Advanced options** retains project folder/ZIP import, thumbnails, downloads, existing interactive GLB/GLTF models, and advanced metadata.
+| Section | Accepted uploads | Presentation |
+| --- | --- | --- |
+| Schematic | One PDF (`application/pdf`) | Integrated PDF viewer |
+| 3D Render | Multiple PNG, JPG/JPEG, WebP, PDF | Image gallery and PDF viewers |
+| Physical Board | Multiple PNG, JPG/JPEG, WebP, PDF | Image gallery and PDF viewers; optional captions |
 
-Permanent deletion is limited to archived records and requires a dialog plus the exact PCB ID. It removes active metadata and associated files, while retaining a minimal audit event. Failed file cleanup leaves a private deletion-pending record that can be retried. Backups follow the operator's separate retention policy.
+New uploads validate both extension and MIME, inspect signatures, and retain limits of 64 MiB per file, 128 MiB per request, and 300 files. Source/project, PCB Layout, GLB/GLTF, STEP, Gerber and generic download upload inputs are removed; legacy import/process API actions are disabled. Existing source/model/layout records and stored files remain intact. Legacy processing helpers remain internal for compatibility; there is no automatic Altium worker.
 
-## Uploads and Altium processing
+Files can be selected before the first save. Saving creates the draft, uploads pending groups and saves captions. Failed groups remain selected for retry; publishing waits for all pending work to succeed. **Technical metadata** retains the validated JSON editor for existing optional specifications and credits.
 
-Manual uploads support `.PrjPcb`, `.SchDoc`, `.PcbDoc`, `.OutJob`, PDF, PNG, JPEG, WebP, STEP/STP, GLB/GLTF, ZIP, and limited supporting text/JSON/CSV/BIN files. The selected section further restricts formats. New SVG uploads are not allowed; trusted repository demo SVGs can be migrated.
+PDF.js is self-hosted from the pinned dependency. `predev` and `prebuild` prepare its worker, fonts and supporting files under ignored `public/pdfjs/`. No CDN or additional environment variable is needed. PDF previews support scrolling pages, an enlarged dialog, zoom, and **Open PDF** fallback. Cards render only page one on demand. Range-aware media delivery and disabled prefetch avoid eagerly downloading all pages; small PDFs or PDF internal structure can still require the whole file to render page one. Larger viewers are mounted only when opened, and pages render as they enter view. No server-side PDF rasterizer or C++ toolchain is added.
 
-Choose a project folder or ZIP to upload source documents with their relative paths. A `.PrjPcb` alone cannot read sibling files. The importer inspects project references, lists missing documents and uploaded external model files, and retains source files privately. It does not claim to parse proprietary schematic/PCB contents or count embedded component models. SchDoc/PcbDoc uploads currently require the supported compound-document container signature.
+Homepage/catalog covers use **selected primary 3D asset ? first 3D image ? first 3D PDF ? ?3D preview unavailable?**. Schematic, physical photos and the legacy `thumbnail` field are never used as fallbacks. Select **Primary cover** beside a saved 3D asset, then publish.
 
-**Actual Altium output generation is not connected.** The separate `AltiumProcessor` interface in `src/lib/admin/processor.ts` returns an explicit `ALTIUM_WORKER_NOT_CONFIGURED` processing failure through its default adapter. Reports persist with the board, and **Recheck project** retries inspection. No scheduler or remote worker credentials are enabled. Implementing the Windows worker, job leasing/dispatch, version-safe output ingestion, and real Altium scripts/OutputJobs is a separate integration task. There are no fake renders or success indicators.
+**Remove from draft** and section replacement stage asset removals. Published files remain available until the next Publish. After publication, explicitly removed assets are deleted from storage only when neither the draft nor published snapshot references them. Unselected legacy/historical files are not swept. Cleanup failures stay queued and are retried on the next Publish; the editor shows a notice. Individual asset removal does not delete the board.
 
-Selected generated previews take priority over selected manual previews, separately for schematic images/PDF, layout images/PDFs, and 3D renders. Migrated previews remain valid fallbacks. Manual replacements preserve generated candidates; historical unselected files are never automatically restored. The chosen result is frozen in the published snapshot until the next explicit publish. Manual fallback schematic PDFs are retained in private draft metadata. This priority rule does not imply that a worker is configured.
+## Categories and permanent deletion
 
-**Replace current section selection** changes the draft selection while retaining historical files privately. Replacing primary schematic sources affects only .SchDoc files; replacing primary PCB sources affects only .PcbDoc files. Advanced project import may replace the entire source manifest. Existing interactive models remain supported, but the primary **3D Render** field accepts static images only.
+Categories live in SQLite with ID, slug, name, creation time and optional description. The nine initial categories are seeded once using their original IDs. Custom categories appear on refreshed forms, public filters and category pages without rebuilding. Returning focus to an open editor refreshes its category options. Default categories behave like other categories and are not recreated after deletion.
 
-Limits: 64 MiB per file, 128 MiB per request, 256 MiB total expanded content, 300 archive entries/files, and an 8 MiB project-manifest inspection limit. Nested/encrypted archives, unsafe paths, archive links, duplicate paths and excessive compression ratios are rejected. Content signatures and MIME values are checked where supported. This is format validation, not full EDA validation or malware scanning. Uploaded scripts/executables are rejected and never executed.
+Only Admins can create or delete categories. Names are normalized for whitespace, case and Unicode before duplicate checks; slugs are validated and unique. Deletion requires confirmation and is rejected if any draft, published snapshot or archived board references the category. Reassign the draft and republish before deleting a category still referenced by the published version.
 
-GLTF may include safe local BIN/texture dependencies in the same upload; these are embedded. GLB must be self-contained. External network references are rejected. STEP/STP remain source/download files until a real converter produces a browser model.
+**Delete** is visible to Admins in the management list and edit page, independently of **Archive**. Type the exact PCB ID to confirm. Deletion makes the board private internally, then removes its metadata, all associated assets and storage records, retaining a minimal audit event. Failed cleanup leaves a private deletion-pending record for retry. It never deletes unrelated boards or categories. Backups follow the operator's separate retention policy.
 
 ## Storage and public compatibility
 
 ```text
 var/pcb/
-  metadata.sqlite          # Boards, draft/published snapshots, assets, audit, migration markers
+  metadata.sqlite          # Boards, categories, snapshots, assets, audit, migration markers
   metadata.sqlite-wal      # SQLite may create WAL/SHM files while running
   assets/<board-key>/
     source/
@@ -107,7 +113,7 @@ The storage service interface isolates file operations from board management. Th
 
 Legacy `/pcb/...` URLs route through a `beforeFiles` rewrite to controlled media delivery. Static repository files cannot bypass publication checks when served by Next.js. Only assets selected by the published snapshot are anonymously accessible. Sources, drafts, historical unselected files, and archived assets require an authenticated administrator. Responses use `no-store`, controlled content types, and `nosniff`.
 
-Existing public routes, browser search/filter/sort, gallery interactions, and lazy 3D viewing are preserved. Do not configure a reverse proxy to serve `/pcb/` directly from disk, and do not deploy an older `out/` directory alongside the server.
+Existing public routes, browser search/filter/sort and image-gallery interactions are preserved. Public media sections now present Schematic, 3D Render and Physical Board; legacy interactive models/layouts remain stored but are not displayed. Do not configure a reverse proxy to serve `/pcb/` directly from disk, and do not deploy an older `out/` directory alongside the server.
 
 ## Commands and validation
 
@@ -115,7 +121,7 @@ Existing public routes, browser search/filter/sort, gallery interactions, and la
 | --- | --- |
 | `npm run dev` | Local development server |
 | `npm run admin:password` | Generate an administrator password hash interactively |
-| `npm run db:migrate` | Copy previously unmigrated legacy JSON boards/assets into runtime storage as Published |
+| `npm run db:migrate` | Apply category migration and import previously unmigrated legacy JSON boards/assets |
 | `npm run validate:boards` | Validate legacy JSON seed records and referenced repository files |
 | `npm run validate:runtime` | Validate runtime metadata, asset ownership and SHA-256 checksums |
 | `npm run lint` | ESLint with zero warnings |
@@ -127,7 +133,16 @@ Existing public routes, browser search/filter/sort, gallery interactions, and la
 
 Migration is additive and idempotent for completed records. It never overwrites existing runtime identities. Keep original JSON as migration fixtures, not a second live editing system. Review any conflict rather than deleting runtime records to force a migration.
 
-The unified-interface/upload refinement needs **no database migration command** for an existing installation. SQLite tables and asset paths are unchanged. Optional JSON fields (`layoutPdfs`, server-derived published `sourceAvailability`, and private `schematicPdfCandidates`) are added only when used; old records remain readable without rewriting them. Source availability is captured at publication, so private source uploads cannot change public text before publishing. Use `npm run db:migrate` only to import legacy seed records on initial setup, and `npm run validate:runtime` to verify an existing library. No environment variables were added for this refinement.
+For this refinement, stop the running server and back up the complete private data directory, then run:
+
+```powershell
+npm ci
+npm run db:migrate
+npm run validate:runtime
+npm run dev
+```
+
+`db:migrate` applies the transactional, one-time `categories-v1` migration before checking legacy import markers. Existing boards/assets are preserved; no destructive reset occurs. Repository startup also ensures this migration is applied. Optional JSON changes allow PDF URLs in `model3d.renders` and `photos[].src`, add `model3d.primary` and private `pendingAssetRemovals`; old JSON remains readable without a rewrite. No new environment variables or admin account setup are required for an existing installation. `Task.md` is unchanged; this approved phase supersedes its earlier source/layout/interactive-model upload requirements.
 
 Browser tests require `npm run build` and Chrome/Chromium. Run `npx playwright install chromium`, or in PowerShell set `$env:PLAYWRIGHT_CHANNEL='chrome'` for installed Chrome. Tests provision their own temporary database, credentials and assets; they do not modify the real runtime library. The mobile project uses a Chromium viewport, not Safari certification.
 

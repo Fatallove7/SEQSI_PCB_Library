@@ -3,7 +3,7 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { appOrigin, HttpError } from "./http";
 
-export type Permission = "upload" | "edit" | "publish" | "archive" | "restore" | "delete" | "manage-users";
+export type Permission = "upload" | "edit" | "publish" | "archive" | "restore" | "delete" | "manage-users" | "manage-categories";
 export type User = { username: string; role: "admin" | "editor" };
 type Session = { username?: string; role?: string; fingerprint?: string; expiresAt?: number };
 const SESSION_SECONDS = 8 * 60 * 60;

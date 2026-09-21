@@ -1,4 +1,4 @@
-// Edit this list to match the group's taxonomy. Existing record IDs must stay in sync.
+// Initial taxonomy for the one-time SQLite migration and legacy JSON tooling.
 export const boardCategories = [
   { id: "adapter-board", label: "Adapter Boards", description: "Connector adapters and signal routing boards." },
   { id: "filter-board", label: "Filter Boards", description: "Analog, RF, and cryogenic filter designs." },

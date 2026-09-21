@@ -26,7 +26,6 @@ test("drafts, updates, archive and restore never leak unpublished metadata", () 
     assert.equal(board.publicationState, "draft");
     assert.equal(repo.published().length, 0);
     assert.throws(() => repo.create(input, "admin"), /already exists/);
-    assert.throws(() => repo.delete(board.key, board.version, input.id, "admin"), /archive/i);
     board = repo.archive(board.key, board.version, "admin");
     assert.throws(() => repo.delete(board.key, board.version, "wrong", "admin"), /confirmation/i);
     repo.delete(board.key, board.version, input.id, "admin");

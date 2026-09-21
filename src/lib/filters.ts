@@ -1,5 +1,6 @@
 import { boardCategories } from "../data/categories";
 import type { BoardSummary } from "../types/board";
+import type { Category } from "../types/category";
 
 export type BoardFilters = {
   q?: string;
@@ -11,14 +12,14 @@ export type BoardFilters = {
 
 const compareText = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
 
-export function filterBoards<T extends BoardSummary>(boards: T[], filters: BoardFilters): T[] {
+export function filterBoards<T extends BoardSummary>(boards: T[], filters: BoardFilters, categories: Pick<Category, "id" | "name">[] = boardCategories.map(c => ({ id: c.id, name: c.label }))): T[] {
   const query = filters.q?.trim().toLowerCase();
   const filtered = boards.filter((board) => {
     if (filters.category && board.category !== filters.category) return false;
     if (filters.year && String(board.year) !== filters.year) return false;
     if (filters.designer && !board.designer?.includes(filters.designer)) return false;
     if (!query) return true;
-    const categoryLabel = boardCategories.find((category) => category.id === board.category)?.label;
+    const categoryLabel = categories.find((category) => category.id === board.category)?.name;
     return [board.id, board.title, ...(board.designer ?? []), board.category, categoryLabel,
       ...(board.tags ?? []), board.description].join(" ").toLowerCase().includes(query);
   });

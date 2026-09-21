@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import type { Board, BoardSummary } from "../types/board";
+import { boardCover } from "./board-cover";
 import { filterBoards } from "./filters";
 import { validateBoardRecords } from "./validation";
 
@@ -20,9 +21,10 @@ export function getBoards(rootDirectory = process.cwd()): Board[] {
 }
 
 export function getBoardSummaries(boards: Board[]): BoardSummary[] {
-  return boards.map(({ id, slug, title, year, category, designer, description, tags, thumbnail, demo, createdAt }) => ({
-    id, slug, title, year, category, designer, description, tags, thumbnail, demo, createdAt,
-  }));
+  return boards.map((board) => {
+    const { id, slug, title, year, category, designer, description, tags, demo, createdAt } = board;
+    return { id, slug, title, year, category, designer, description, tags, cover: boardCover(board), demo, createdAt };
+  });
 }
 
 export function getYears(boards: Board[]): number[] {

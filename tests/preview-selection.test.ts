@@ -59,12 +59,12 @@ test("manual schematic PDF cannot replace a generated PDF and source replacement
   } finally {close();}
 });
 
-test("render priorities and invalid source replacements preserve selected content",()=>{
+test("selected renders and invalid source replacements preserve selected content",()=>{
   const {repo,close}=fixture();try {
     let r=repo.create(board,"admin");
     r=repo.addAssets(r.key,r.version,[file("manual.png","render"),file("generated.png","render","generated")],false,"admin");
     r=repo.publish(r.key,r.version,"admin");
-    assert.deepEqual(r.published?.model3d?.renders,[repo.assets(r.key)[1].url]);
+    assert.deepEqual(r.published?.model3d?.renders,repo.assets(r.key).map(asset=>asset.url));
     assert.throws(()=>repo.addAssets(r.key,r.version,[file("bad.PcbDoc","source")],true,"admin","schematic"),/Source format/);
     assert.equal(repo.get(r.key).version,r.version);
     assert.equal(repo.assets(r.key).length,2);

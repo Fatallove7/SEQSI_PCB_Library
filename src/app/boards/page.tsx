@@ -1,3 +1,4 @@
+import { repository } from "@/lib/admin/repository";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Catalog } from "@/components/Catalog";
@@ -7,5 +8,5 @@ import { getBoardSummaries } from "@/lib/boards";
 export const metadata: Metadata = { title: "Boards", description: "Search and browse PCB designs by category, year, and designer." };
 
 export default function BoardsPage() {
-  return <Suspense fallback={<p className="empty-state">Loading catalog controls…</p>}><Catalog boards={getBoardSummaries(getBoards())} /></Suspense>;
+  return <Suspense fallback={<p className="empty-state">Loading catalog controls…</p>}><Catalog categories={repository().categories()} boards={getBoardSummaries(getBoards())} /></Suspense>;
 }

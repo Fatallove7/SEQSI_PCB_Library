@@ -17,7 +17,7 @@ const types: Record<string, string[]> = {
 const roles: Record<AssetRole, string[]> = {
   "layout-pdf": ["pdf"],
   source: ["prjpcb","schdoc","pcbdoc","outjob","step","stp","bin","txt","json","zip","png","jpg","jpeg","webp","glb","gltf","pdf"],
-  thumbnail: ["png","jpg","jpeg","webp"], schematic: ["png","jpg","jpeg","webp"], "schematic-pdf": ["pdf"], layout: ["png","jpg","jpeg","webp"], model: ["glb","gltf"], render: ["png","jpg","jpeg","webp"], photo: ["png","jpg","jpeg","webp"], download: Object.keys(types),
+  thumbnail: ["png","jpg","jpeg","webp"], schematic: ["png","jpg","jpeg","webp"], "schematic-pdf": ["pdf"], layout: ["png","jpg","jpeg","webp"], model: ["glb","gltf"], render: ["png","jpg","jpeg","webp","pdf"], photo: ["png","jpg","jpeg","webp","pdf"], download: Object.keys(types),
 };
 export function safeRelativePath(name: string): string {
   if (name.length > 240 || /[\\:%\x00-\x1f]/.test(name) || name.startsWith("/") || name.split("/").some(p => !p || p === "." || p === ".." || /[. ]$/.test(p) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(p))) throw new ManagementError("Unsafe upload path");
@@ -79,6 +79,17 @@ export async function validateUpload(name: string, mime: string, data: Buffer): 
   return types[extension][0];
 }
 type Incoming = {name:string;mime:string;data:Buffer};
+// The public management workflow is deliberately narrower than legacy import support.
+export async function prepareLibraryUploads(incoming: Incoming[], role: AssetRole): Promise<UploadAsset[]> {
+  if (!["schematic-pdf", "render", "photo"].includes(role)) throw new ManagementError("Unsupported upload section. Use Schematic, 3D Render, or Physical Board.");
+  if (role === "schematic-pdf" && incoming.length !== 1) throw new ManagementError("Select one schematic PDF");
+  for (const item of incoming) {
+    const extension = item.name.split(".").pop()!.toLowerCase();
+    if (!roles[role].includes(extension)) throw new ManagementError(role === "schematic-pdf" ? "Schematic accepts PDF only" : "Select PNG, JPG, JPEG, WebP, or PDF files");
+    if (!types[extension].includes(item.mime.toLowerCase())) throw new ManagementError(`MIME type does not match ${item.name}`);
+  }
+  return prepareUploads(incoming, role, false);
+}
 export async function unzip(data: Buffer, maxBytes = MAX_EXPANDED_BYTES, maxFiles = MAX_FILES): Promise<Incoming[]> {
   return new Promise((resolve, reject) => {
     fromBuffer(data, {lazyEntries:true,validateEntrySizes:true,strictFileNames:true}, (error, zip) => {

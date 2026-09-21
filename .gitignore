@@ -11,3 +11,6 @@ playwright-report/
 
 # Private runtime metadata and uploaded files
 var/
+
+# Prepared from the pinned PDF.js dependency before dev/build
+/public/pdfjs/

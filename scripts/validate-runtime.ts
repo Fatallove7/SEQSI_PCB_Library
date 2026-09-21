@@ -8,6 +8,7 @@ try {
   for(const record of records) {
     for(const board of [record.board,record.published].filter(Boolean)) {
       boardSchema.parse(board);
+      if (!repo.categories().some(category=>category.id===board!.category)) throw new Error(`Unknown category on ${record.board.id}`);
       for(const url of boardAssetPaths(board!)) {
         const asset=repo.asset(url);
         if(!asset || asset.boardKey!==record.key) throw new Error(`Invalid asset reference on ${record.board.id}`);

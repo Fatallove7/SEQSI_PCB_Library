@@ -290,3 +290,19 @@ code { font-size: var(--type-small); background: var(--background-secondary); pa
   .main-content { padding-bottom: var(--space-12); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+
+/* Shared technical PDF presentation uses the existing engineering design tokens. */
+.board-media { display: grid; gap: var(--space-6); }
+.pdf-preview { min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-control); overflow: hidden; }
+.pdf-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-4); background: var(--surface-elevated); }
+.pdf-toolbar > :first-child { margin-right: auto; overflow-wrap: anywhere; }
+.pdf-pages { max-height: 70vh; overflow: auto; background: var(--background-secondary); padding: var(--space-3); display: grid; gap: var(--space-3); }
+.pdf-page { min-width: 0; min-height: 160px; width: 100%; }
+.pdf-page canvas { display: block; margin-inline: auto; max-width: none; }
+.pdf-thumbnail { height: 100%; overflow: hidden; }
+.pdf-thumbnail .pdf-page { min-height: 0; height: 100%; }
+.pdf-thumbnail canvas { object-fit: contain; max-width: 100%; width: 100% !important; height: 100% !important; }
+.pdf-dialog { padding: 0; margin: auto; overflow: hidden; }
+.pdf-dialog[open] { display: flex; flex-direction: column; max-height: 94dvh; }
+.pdf-dialog .pdf-toolbar { flex-shrink: 0; }
+.pdf-dialog .pdf-pages { min-height: 0; max-height: 78dvh; }
